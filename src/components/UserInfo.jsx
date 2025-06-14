@@ -65,27 +65,34 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
           data.incBalance = fromUnits(incBalance);
         }
       } else {
-        const result = await contract.methods.getClaimEligibility(account).call();
-        console.log("getClaimEligibility raw result:", { result, type: typeof result, account, contractAddress: contract.options.address });
-        
         let claimablePLSTR, xBondBalance, iBondBalance;
-        if (Array.isArray(result) && result.length === 5) {
-          [claimablePLSTR, xBondBalance, iBondBalance, , ] = result;
-          console.log("getClaimEligibility parsed as array:", { claimablePLSTR, xBondBalance, iBondBalance });
-        } else if (typeof result === "object" && result !== null) {
-          claimablePLSTR = result.claimablePLSTR || result[0] || result;
-          xBondBalance = result.xBondBalance || result[1] || "0";
-          iBondBalance = result.iBondBalance || result[2] || "0";
-          console.log("getClaimEligibility parsed as object:", { claimablePLSTR, xBondBalance, iBondBalance });
-        } else {
-          console.warn("Unexpected getClaimEligibility result:", { result });
-          claimablePLSTR = result;
-          xBondBalance = "0";
-          iBondBalance = "0";
+        try {
+          const result = await contract.methods.getClaimEligibility(account).call();
+          console.log("getClaimEligibility raw result:", { result, type: typeof result, account, contractAddress: contract.options.address });
+          
+          if (Array.isArray(result) && result.length === 5) {
+            [claimablePLSTR, xBondBalance, iBondBalance, , ] = result;
+            console.log("getClaimEligibility parsed as array:", { claimablePLSTR, xBondBalance, iBondBalance });
+          } else if (typeof result === "object" && result !== null) {
+            claimablePLSTR = result.claimablePLSTR || result[0] || "0";
+            xBondBalance = result.xBondBalance || result[1] || "0";
+            iBondBalance = result.iBondBalance || result[2] || "0";
+            console.log("getClaimEligibility parsed as object:", { claimablePLSTR, xBondBalance, iBondBalance });
+          } else {
+            throw new Error("Unexpected getClaimEligibility result format");
+          }
+        } catch (err) {
+          console.warn("getClaimEligibility failed, trying getPendingPLSTR:", err.message);
+          const xBondResult = await contract.methods.getPendingPLSTR(tokenAddrs.xBOND, account).call();
+          const iBondResult = await contract.methods.getPendingPLSTR(tokenAddrs.iBOND, account).call();
+          claimablePLSTR = (BigInt(xBondResult) + BigInt(iBondResult)).toString();
+          xBondBalance = await new web3.eth.Contract(PLSTR_ABI, tokenAddrs.xBOND).methods.balanceOf(account).call();
+          iBondBalance = await new web3.eth.Contract(PLSTR_ABI, tokenAddrs.iBOND).methods.balanceOf(account).call();
+          console.log("getPendingPLSTR fallback parsed:", { claimablePLSTR, xBondBalance, iBondBalance });
         }
 
         if (isNaN(Number(claimablePLSTR)) || isNaN(Number(xBondBalance)) || isNaN(Number(iBondBalance))) {
-          throw new Error(`Invalid number format in getClaimEligibility: ${JSON.stringify({ claimablePLSTR, xBondBalance, iBondBalance })}`);
+          throw new Error(`Invalid number format: ${JSON.stringify({ claimablePLSTR, xBondBalance, iBondBalance })}`);
         }
 
         data.claimablePLSTR = fromUnits(claimablePLSTR);
@@ -149,4 +156,17 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
                 Claimable PLSTR: <span className="text-[#4B0082]">{formatNumber(userData.claimablePLSTR)} PLSTR</span>
               </p>
               <p className="text-gray-500">
-                x
+                xBOND Balance: <span className="text-[#4B0082]">{formatNumber(userData.xBondBalance)} xBOND</span>
+              </p>
+              <p className="text-gray-500">
+                iBOND Balance: <span className="text-[#4B0082]">{formatNumber(userData.iBondBalance)} iBOND</span>
+              </p>
+            </>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+export default UserInfo;
