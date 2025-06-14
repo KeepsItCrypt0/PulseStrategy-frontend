@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { formatNumber } from "../utils/format";
+import { tokenAddresses } from "../web3";
 
-const ClaimPLSTR = ({ contract, account, web3, chainId, contractSymbol }) => {
+  const ClaimPLSTR = ({ contract, account, web3, chainId, contractSymbol }) => {
   const [pendingPLSTR, setPendingPLSTR] = useState("0");
   const [xBondBalance, setXBondBalance] = useState("0");
   const [iBondBalance, setIBondBalance] = useState("0");
