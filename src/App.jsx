@@ -4,11 +4,11 @@ import ContractInfo from "./components/ContractInfo";
 import UserInfo from "./components/UserInfo";
 import IssueShares from "./components/IssueShares";
 import RedeemShares from "./components/RedeemShares";
-import Burn from "./components/Burn"; // Updated from SwapBurn
+import Burn from "./components/Burn";
 import ClaimPLSTR from "./components/ClaimPLSTR";
-import DepositTokens from "./components/DepositTokens"; // New component
 import AdminPanel from "./components/AdminPanel";
-import { getWeb3, getAccount, getContract } from "./web3";
+import { getWeb3, getAccount, getContract, contractAddresses } from "./web3";
+import { PLSTR_ABI, xBOND_ABI, iBOND_ABI } from "./web3";
 import "./index.css";
 
 const App = () => {
@@ -21,7 +21,11 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const CREATOR_ADDRESS = "0x6aaE8556C69b795b561CB75ca83aF6187d2F0AF5";
+  const contractABIs = {
+    PLSTR: PLSTR_ABI,
+    xBOND: xBOND_ABI,
+    iBOND: iBOND_ABI,
+  };
 
   const initializeApp = async () => {
     setLoading(true);
@@ -49,14 +53,37 @@ const App = () => {
       }
       setAccount(account);
 
-      const contractInstance = await getContract(web3Instance, contractSymbol);
-      if (!contractInstance) {
-        throw new Error(`Failed to initialize ${contractSymbol} contract`);
+      const contractAddress = contractAddresses[369]?.[contractSymbol];
+      const contractABI = contractABIs[contractSymbol];
+      if (!contractAddress || !contractABI) {
+        throw new Error(`Contract address or ABI not found for ${contractSymbol} on PulseChain`);
       }
+
+      const contractInstance = new web3Instance.eth.Contract(contractABI, contractAddress);
       setContract(contractInstance);
 
-      const isOwner = account.toLowerCase() === CREATOR_ADDRESS.toLowerCase();
-      setIsController(isOwner);
+      // Check if the user is the strategy controller
+      try {
+        const controller = await contractInstance.methods._strategyController().call();
+        setIsController(controller.toLowerCase() === account.toLowerCase());
+        console.log("Controller check:", {
+          account,
+          isController: controller.toLowerCase() === account.toLowerCase(),
+          chainId,
+          contractAddress,
+          contractSymbol,
+        });
+      } catch (err) {
+        console.error("Error checking strategy controller:", err);
+        setError("Failed to verify controller status");
+      }
+
+      console.log("App initialized:", {
+        chainId,
+        account,
+        contractAddress,
+        contractSymbol,
+      });
     } catch (error) {
       console.error("App initialization failed:", error);
       setError(`Initialization failed: ${error.message || "Unknown error"}`);
@@ -100,7 +127,7 @@ const App = () => {
   return (
     <div className="min-h-screen gradient-bg flex flex-col items-center p-4">
       <header className="w-full max-w-4xl bg-white bg-opacity-90 shadow-lg rounded-lg p-6 mb-6 card">
-        <img src="/assets/logo.png" alt="PulseStrategy Logo" className="mx-auto h-16 mb-4" />
+        <h1 className="text-3xl font-bold text-center text-purple-600">PulseStrategy</h1>
         <p className="text-center text-gray-600 mt-2">
           {account
             ? `Interact with the ${contractSymbol} contract on PulseChain`
@@ -111,7 +138,7 @@ const App = () => {
           <select
             value={contractSymbol}
             onChange={(e) => setContractSymbol(e.target.value)}
-            className="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4B0082]"
+            className="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
             disabled={!web3 || chainId !== 369}
           >
             {["xBOND", "iBOND", "PLSTR"].map((symbol) => (
@@ -136,7 +163,7 @@ const App = () => {
       </header>
       <main className="w-full max-w-4xl space-y-6">
         {error ? (
-          <p className="text-center text-[#8B0000]">{error}</p>
+          <p className="text-center text-red-700">{error}</p>
         ) : !web3 || !account || !contract || chainId !== 369 ? (
           <p className="text-center text-white">Please connect your wallet to PulseChain to interact with the contract.</p>
         ) : (
@@ -154,16 +181,8 @@ const App = () => {
               chainId={chainId}
               contractSymbol={contractSymbol}
             />
-            {contractSymbol !== "PLSTR" ? (
+            {contractSymbol !== "PLSTR" && (
               <IssueShares
-                contract={contract}
-                account={account}
-                web3={web3}
-                chainId={chainId}
-                contractSymbol={contractSymbol}
-              />
-            ) : (
-              <DepositTokens
                 contract={contract}
                 account={account}
                 web3={web3}
@@ -187,7 +206,7 @@ const App = () => {
                 contractSymbol={contractSymbol}
               />
             ) : (
-              <Burn
+              <SwapBurn
                 contract={contract}
                 account={account}
                 web3={web3}
