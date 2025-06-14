@@ -7,28 +7,77 @@ const ClaimPLSTR = ({ contract, account, web3, chainId, contractSymbol }) => {
   const [error, setError] = useState("");
 
   const fetchPendingPLSTR = async () => {
-    if (!web3 || !contract || !account || chainId !== 369) return;
+    if (!web3 || !contract || !account || chainId !== 369) {
+      console.warn("ClaimPLSTR: Invalid props for fetchPendingPLSTR", {
+        web3: !!web3,
+        contract: !!contract,
+        account,
+        chainId,
+      });
+      return;
+    }
     try {
-      const [claimablePLSTR] = await contract.methods.getClaimEligibility(account).call();
+      const result = await contract.methods.getClaimEligibility(account).call();
+      console.log("getClaimEligibility result:", {
+        result,
+        account,
+        contractAddress: contract.options.address,
+      });
+
+      // Handle both array and object return formats
+      let claimablePLSTR;
+      if (Array.isArray(result)) {
+        [claimablePLSTR] = result;
+      } else if (result && typeof result === "object") {
+        claimablePLSTR = result.claimablePLSTR || result[0];
+      } else {
+        throw new Error("Unexpected getClaimEligibility return format");
+      }
+
+      // Ensure claimablePLSTR is a string to avoid fromWei errors
+      if (!claimablePLSTR || typeof claimablePLSTR !== "string") {
+        console.warn("Invalid claimablePLSTR value:", { claimablePLSTR });
+        setPendingPLSTR("0");
+        return;
+      }
+
       setPendingPLSTR(web3.utils.fromWei(claimablePLSTR, "ether"));
+      setError("");
     } catch (err) {
+      console.error("Error fetching claimable PLSTR:", {
+        error: err.message,
+        account,
+        contractAddress: contract.options.address,
+      });
       setError(`Failed to load claimable PLSTR: ${err.message}`);
+      setPendingPLSTR("0");
     }
   };
 
   useEffect(() => {
-    if (web3 && contract && account && chainId === 369) fetchPendingPLSTR();
+    if (web3 && contract && account && chainId === 369) {
+      fetchPendingPLSTR();
+    }
   }, [web3, contract, account, chainId]);
 
   const handleClaim = async () => {
+    if (!web3 || !contract || !account || chainId !== 369) {
+      setError("Invalid configuration for claiming PLSTR");
+      return;
+    }
     setLoading(true);
     setError("");
     try {
       await contract.methods.claimPLSTR().send({ from: account });
       alert(`Successfully claimed ${pendingPLSTR} PLSTR!`);
       setPendingPLSTR("0");
-      fetchPendingPLSTR();
+      await fetchPendingPLSTR();
     } catch (err) {
+      console.error("Error claiming PLSTR:", {
+        error: err.message,
+        account,
+        contractAddress: contract.options.address,
+      });
       setError(`Error claiming PLSTR: ${err.message}`);
     } finally {
       setLoading(false);
