@@ -67,22 +67,22 @@ const App = () => {
 
       // Check if the user is the strategy controller
       try {
+        let controllerAddress;
         if (contractSymbol === "PLSTR") {
-          // Hardcoded controller check for PLSTR
+          controllerAddress = PLSTR_CONTROLLER;
           setIsController(account.toLowerCase() === PLSTR_CONTROLLER.toLowerCase());
         } else {
-          // Use _strategyController for xBOND and iBOND
-          const controller = await contractInstance.methods._strategyController().call();
-          if (controller && web3Instance.utils.isAddress(controller)) {
-            setIsController(controller.toLowerCase() === account.toLowerCase());
-          } else {
-            console.warn("Invalid controller address returned:", controller);
-            setIsController(false);
-          }
+          controllerAddress = await contractInstance.methods._strategyController().call();
+          setIsController(
+            controllerAddress &&
+              web3Instance.utils.isAddress(controllerAddress) &&
+              controllerAddress.toLowerCase() === account.toLowerCase()
+          );
         }
-        console.log("Controller check:", {
+        console.log("App controller check:", {
           account,
-          isController: account.toLowerCase() === (contractSymbol === "PLSTR" ? PLSTR_CONTROLLER : controller).toLowerCase(),
+          controllerAddress,
+          isController: account.toLowerCase() === controllerAddress.toLowerCase(),
           chainId,
           contractAddress,
           contractSymbol,
@@ -93,7 +93,7 @@ const App = () => {
           contractAddress,
           contractSymbol,
         });
-        setIsController(false); // Default to false on error
+        setIsController(false);
       }
 
       console.log("App initialized:", {
@@ -243,15 +243,14 @@ const App = () => {
                 contractSymbol={contractSymbol}
               />
             )}
-            {isController && (
-              <AdminPanel
-                contract={contract}
-                account={account}
-                web3={web3}
-                chainId={chainId}
-                contractSymbol={contractSymbol}
-              />
-            )}
+            <AdminPanel
+              contract={contract}
+              account={account}
+              web3={web3}
+              chainId={chainId}
+              contractSymbol={contractSymbol}
+              appIsController={isController}
+            />
           </>
         )}
       </main>
