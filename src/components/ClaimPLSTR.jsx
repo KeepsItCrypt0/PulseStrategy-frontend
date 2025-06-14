@@ -3,46 +3,27 @@ import { formatNumber } from "../utils/format";
 
 const ClaimPLSTR = ({ contract, account, web3, chainId, contractSymbol }) => {
   const [pendingPLSTR, setPendingPLSTR] = useState("0");
+  const [xBondBalance, setXBondBalance] = useState("0");
+  const [iBondBalance, setIBondBalance] = useState("0");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const fetchPendingPLSTR = async () => {
-    if (!web3 || !contract || !account || chainId !== 369) {
-      console.warn("ClaimPLSTR: Invalid props for fetchPendingPLSTR", {
-        web3: !!web3,
-        contract: !!contract,
-        account,
-        chainId,
-      });
-      return;
-    }
+    if (!web3 || !contract || !account || chainId !== 369) return;
     try {
-      const result = await contract.methods.getClaimEligibility(account).call();
+      const [claimablePLSTR, xBondBal, iBondBal, lastClaimedIndex, currentIndex] = await contract.methods.getClaimEligibility(account).call();
       console.log("getClaimEligibility result:", {
-        result,
         account,
+        claimablePLSTR,
+        xBondBalance: xBondBal,
+        iBondBalance: iBondBal,
+        lastClaimedDepositIndex: lastClaimedIndex,
+        currentDepositIndex: currentIndex,
         contractAddress: contract.options.address,
       });
-
-      // Handle both array and object return formats
-      let claimablePLSTR;
-      if (Array.isArray(result)) {
-        [claimablePLSTR] = result;
-      } else if (result && typeof result === "object") {
-        claimablePLSTR = result.claimablePLSTR || result[0];
-      } else {
-        throw new Error("Unexpected getClaimEligibility return format");
-      }
-
-      // Ensure claimablePLSTR is a string to avoid fromWei errors
-      if (!claimablePLSTR || typeof claimablePLSTR !== "string") {
-        console.warn("Invalid claimablePLSTR value:", { claimablePLSTR });
-        setPendingPLSTR("0");
-        return;
-      }
-
-      setPendingPLSTR(web3.utils.fromWei(claimablePLSTR, "ether"));
-      setError("");
+      setPendingPLSTR(web3.utils.fromWei(claimablePLSTR.toString(), "ether"));
+      setXBondBalance(web3.utils.fromWei(xBondBal.toString(), "ether"));
+      setIBondBalance(web3.utils.fromWei(iBondBal.toString(), "ether"));
     } catch (err) {
       console.error("Error fetching claimable PLSTR:", {
         error: err.message,
@@ -50,21 +31,14 @@ const ClaimPLSTR = ({ contract, account, web3, chainId, contractSymbol }) => {
         contractAddress: contract.options.address,
       });
       setError(`Failed to load claimable PLSTR: ${err.message}`);
-      setPendingPLSTR("0");
     }
   };
 
   useEffect(() => {
-    if (web3 && contract && account && chainId === 369) {
-      fetchPendingPLSTR();
-    }
+    if (web3 && contract && account && chainId === 369) fetchPendingPLSTR();
   }, [web3, contract, account, chainId]);
 
   const handleClaim = async () => {
-    if (!web3 || !contract || !account || chainId !== 369) {
-      setError("Invalid configuration for claiming PLSTR");
-      return;
-    }
     setLoading(true);
     setError("");
     try {
@@ -91,6 +65,12 @@ const ClaimPLSTR = ({ contract, account, web3, chainId, contractSymbol }) => {
       <h2 className="text-xl font-semibold mb-4 text-[#4B0082]">Claim PLSTR</h2>
       <p className="text-gray-600 mb-2">
         Pending PLSTR: <span className="text-[#4B0082]">{formatNumber(pendingPLSTR)} PLSTR</span>
+      </p>
+      <p className="text-gray-600 mb-2">
+        xBOND Balance: <span className="text-[#4B0082]">{formatNumber(xBondBalance)} xBOND</span>
+      </p>
+      <p className="text-gray-600 mb-2">
+        iBOND Balance: <span className="text-[#4B0082]">{formatNumber(iBondBalance)} iBOND</span>
       </p>
       <button
         onClick={handleClaim}
