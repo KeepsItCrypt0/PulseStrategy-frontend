@@ -7,6 +7,7 @@ import RedeemShares from "./components/RedeemShares";
 import SwapBurn from "./components/SwapBurn";
 import ClaimPLSTR from "./components/ClaimPLSTR";
 import AdminPanel from "./components/AdminPanel";
+import WeightUpdate from "./components/WeightUpdate";
 import { getWeb3, getAccount, getContract, contractAddresses } from "./web3";
 import { PLSTR_ABI, xBOND_ABI, iBOND_ABI } from "./web3";
 import "./index.css";
@@ -198,13 +199,21 @@ const App = () => {
               contractSymbol={contractSymbol}
             />
             {contractSymbol === "PLSTR" ? (
-              <ClaimPLSTR
-                contract={contract}
-                account={account}
-                web3={web3}
-                chainId={chainId}
-                contractSymbol={contractSymbol}
-              />
+              <>
+                <ClaimPLSTR
+                  contract={contract}
+                  account={account}
+                  web3={web3}
+                  chainId={chainId}
+                  contractSymbol={contractSymbol}
+                />
+                <WeightUpdate
+                  contract={contract}
+                  account={account}
+                  web3={web3}
+                  chainId={chainId}
+                />
+              </>
             ) : (
               <SwapBurn
                 contract={contract}
