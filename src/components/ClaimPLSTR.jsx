@@ -15,23 +15,23 @@ const ClaimPLSTR = ({ contract, account, web3, chainId, contractSymbol }) => {
     }
     try {
       const result = await contract.methods.getClaimEligibility(account).call();
-      console.log("getClaimEligibility raw result:", { result, account, contractAddress: contract.options.address });
+      console.log("getClaimEligibility raw result:", { result, type: typeof result, account, contractAddress: contract.options.address });
       let claimablePLSTR, xBondBal, iBondBal;
       if (Array.isArray(result) && result.length === 5) {
         [claimablePLSTR, xBondBal, iBondBal, , ] = result;
+        console.log("getClaimEligibility parsed as tuple:", { claimablePLSTR, xBondBal, iBondBal });
       } else {
-        console.warn("Unexpected getClaimEligibility result, assuming single value:", result);
-        claimablePLSTR = result;
-        xBondBal = "0";
-        iBondBal = "0";
+        console.warn("Unexpected getClaimEligibility result:", { result });
+        // Fallback: Try single value or object property
+        claimablePLSTR = typeof result === "object" && result.claimablePLSTR ? result.claimablePLSTR : result;
+        xBondBal = typeof result === "object" && result.xBondBalance ? result.xBondBalance : "0";
+        iBondBal = typeof result === "object" && result.iBondBalance ? result.iBondBalance : "0";
+        console.log("getClaimEligibility fallback parsed:", { claimablePLSTR, xBondBal, iBondBal });
       }
-      console.log("getClaimEligibility parsed:", {
-        claimablePLSTR,
-        xBondBalance: xBondBal,
-        iBondBalance: iBondBal,
-        account,
-        contractAddress: contract.options.address,
-      });
+      // Validate numbers
+      if (isNaN(Number(claimablePLSTR)) || isNaN(Number(xBondBal)) || isNaN(Number(iBondBal))) {
+        throw new Error("Invalid number format in getClaimEligibility result");
+      }
       setPendingPLSTR(web3.utils.fromWei(claimablePLSTR.toString(), "ether"));
       setXBondBalance(web3.utils.fromWei(xBondBal.toString(), "ether"));
       setIBondBalance(web3.utils.fromWei(iBondBal.toString(), "ether"));
@@ -42,6 +42,9 @@ const ClaimPLSTR = ({ contract, account, web3, chainId, contractSymbol }) => {
         contractAddress: contract.options.address,
       });
       setError(`Failed to load claimable PLSTR: ${err.message}`);
+      setPendingPLSTR("0");
+      setXBondBalance("0");
+      setIBondBalance("0");
     }
   };
 
