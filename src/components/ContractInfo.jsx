@@ -10,23 +10,13 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
       incBalance: "0",
       totalMinted: "0",
       totalBurned: "0",
-      iBondWeight: "0",
+      avgPlstrPerBond: "0",
       plsxBackingRatio: "0",
       incBackingRatio: "0",
     },
-    pairAddress: "",
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const truncateAddress = (address) => {
-    if (!address || typeof address !== "string" || address.length < 10) return "Not available";
-    return `0x${address.slice(2, 6)}...${address.slice(-4)}`;
-  };
-
-  const isZeroAddress = (address) => {
-    return address === "0x0000000000000000000000000000000000000000";
-  };
 
   const fromUnits = (balance) => {
     try {
@@ -45,10 +35,9 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
       setError(null);
 
       const isPLSTR = contractSymbol === "PLSTR";
-      const [totalSupply, metrics, pairAddress] = await Promise.all([
+      const [totalSupply, metrics] = await Promise.all([
         contract.methods.totalSupply().call(),
         contract.methods.getContractMetrics().call(),
-        contractSymbol !== "PLSTR" ? contract.methods.getPairAddress().call().catch(() => "") : Promise.resolve(""),
       ]);
 
       const data = {
@@ -60,7 +49,7 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
               incBalance: "0",
               totalMinted: fromUnits(metrics[2]),
               totalBurned: fromUnits(metrics[3]),
-              iBondWeight: fromUnits(metrics[6]),
+              avgPlstrPerBond: fromUnits(metrics[6]),
             }
           : {
               vPlsBalance: "0",
@@ -71,7 +60,6 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
               plsxBackingRatio: contractSymbol === "xBOND" ? fromUnits(metrics[4]) : "0",
               incBackingRatio: contractSymbol === "iBOND" ? fromUnits(metrics[4]) : "0",
             },
-        pairAddress: pairAddress || "",
       };
 
       setContractData(data);
@@ -107,38 +95,40 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
       ) : (
         <>
           <h3 className="text-lg font-medium mt-4">Contract Details</h3>
-          <p className="text-gray-600">Total Supply: <span className="text-[#4B0082]">{formatNumber(contractData.totalSupply)} {contractSymbol}</span></p>
-          <p className="text-gray-600">Total Minted: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.totalMinted)} {contractSymbol}</span></p>
-          <p className="text-gray-600">Total Burned: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.totalBurned)} {contractSymbol}</span></p>
+          <p className="text-gray-600">
+            Total Supply: <span className="text-[#4B0082]">{formatNumber(contractData.totalSupply)} {contractSymbol}</span>
+          </p>
+          <p className="text-gray-600">
+            Total Minted: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.totalMinted)} {contractSymbol}</span>
+          </p>
+          <p className="text-gray-600">
+            Total Burned: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.totalBurned)} {contractSymbol}</span>
+          </p>
           {contractSymbol === "PLSTR" && (
             <>
-              <p className="text-gray-600">vPLS Balance: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.vPlsBalance)} vPLS</span></p>
-              <p className="text-gray-600">iBond Weight: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.iBondWeight)}</span></p>
+              <p className="text-gray-600">
+                vPLS Balance: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.vPlsBalance)} vPLS</span>
+              </p>
+              <p className="text-gray-600">
+                Avg PLSTR per Bond: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.avgPlstrPerBond)}</span>
+              </p>
             </>
           )}
           {contractSymbol !== "PLSTR" && (
             <>
               <p className="text-gray-600">
-                {contractSymbol === "xBOND" ? "PLSX" : "INC"} Balance: <span className="text-[#4B0082]">{formatNumber(contractSymbol === "xBOND" ? contractData.metrics.plsxBalance : contractData.metrics.incBalance)} {contractSymbol === "xBOND" ? "PLSX" : "INC"}</span>
+                {contractSymbol === "xBOND" ? "PLSX" : "INC"} Balance:{" "}
+                <span className="text-[#4B0082]">
+                  {formatNumber(contractSymbol === "xBOND" ? contractData.metrics.plsxBalance : contractData.metrics.incBalance)}{" "}
+                  {contractSymbol === "xBOND" ? "PLSX" : "INC"}
+                </span>
               </p>
               <p className="text-gray-600">
-                Backing Ratio: <span className="text-[#4B0082]">{formatNumber(contractSymbol === "xBOND" ? contractData.metrics.plsxBackingRatio : contractData.metrics.incBackingRatio)}</span>
+                Backing Ratio:{" "}
+                <span className="text-[#4B0082]">
+                  {formatNumber(contractSymbol === "xBOND" ? contractData.metrics.plsxBackingRatio : contractData.metrics.incBackingRatio)}
+                </span>
               </p>
-              {contractData.pairAddress && !isZeroAddress(contractData.pairAddress) && (
-                <p className="text-gray-600">
-                  Pair Address:{" "}
-                  <span className="text-[#4B0082]">
-                    <a
-                      href={`https://kekxplorer.avecdra.pro/address/${contractData.pairAddress}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:underline cursor-pointer"
-                    >
-                      {truncateAddress(contractData.pairAddress)}
-                    </a>
-                  </span>
-                </p>
-              )}
             </>
           )}
         </>
