@@ -11,7 +11,7 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsCon
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const PLSTR_CONTROLLER = "0x6aaE8556C69b795b561CB75ca83aF6187d2F0AF5";
+  const CONTROLLER_ADDRESS = "0x6aaE8556C69b795b561CB75ca83aF6187d2F0AF5"; // Same for PLSTR, xBOND, iBOND
 
   // Null checks for props
   if (!web3 || !contract || !account || !chainId || !contractSymbol) {
@@ -40,32 +40,20 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsCon
     }
   };
 
-  // Check if the user is the strategy controller and fetch vPLS balance
+  // Check if the user is the controller and fetch vPLS balance
   useEffect(() => {
     const fetchData = async () => {
       try {
-        let controllerAddress;
-        if (contractSymbol === "PLSTR") {
-          // Hardcoded controller check for PLSTR
-          controllerAddress = PLSTR_CONTROLLER;
-          setIsController(account.toLowerCase() === PLSTR_CONTROLLER.toLowerCase());
-        } else {
-          // Use _strategyController for xBOND and iBOND
-          controllerAddress = await contract.methods._strategyController().call();
-          if (controllerAddress && web3.utils.isAddress(controllerAddress)) {
-            setIsController(controllerAddress.toLowerCase() === account.toLowerCase());
-          } else {
-            console.warn("Invalid controller address returned:", controllerAddress);
-            setIsController(false);
-          }
-        }
+        // Hardcoded controller check for all contracts
+        setIsController(account.toLowerCase() === CONTROLLER_ADDRESS.toLowerCase());
 
         console.log("AdminPanel controller check:", {
           contractSymbol,
           account,
-          controllerAddress,
-          isController: account.toLowerCase() === controllerAddress.toLowerCase(),
+          controllerAddress: CONTROLLER_ADDRESS,
+          isController: account.toLowerCase() === CONTROLLER_ADDRESS.toLowerCase(),
           appIsController,
+          contractAddress: contract.options.address,
         });
 
         // Fetch vPLS balance for PLSTR
@@ -126,7 +114,7 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsCon
       return;
     }
     if (!isController) {
-      setError("Only the strategy controller can set the pair address");
+      setError("Only the controller can set the pair address");
       return;
     }
     setLoading(true);
@@ -146,7 +134,7 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsCon
   const handleDepositTokens = async () => {
     if (contractSymbol !== "PLSTR") return;
     if (!isController) {
-      setError("Only the strategy controller can deposit vPLS");
+      setError("Only the controller can deposit vPLS");
       return;
     }
     if (!depositAmount || Number(depositAmount) <= 0 || Number(depositAmount) > Number(vPlsBalance)) {
@@ -167,7 +155,6 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsCon
       alert(`Successfully deposited ${depositAmount} vPLS!`);
       setDepositAmount("");
       setDisplayDepositAmount("");
-      // Refresh vPLS balance
       const balance = await tokenContract.methods.balanceOf(account).call();
       setVPlsBalance(fromUnits(balance));
     } catch (err) {
@@ -178,40 +165,9 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsCon
     }
   };
 
-  const handleUpdateWeight = async () => {
-    if (contractSymbol !== "PLSTR") return;
-    if (!window.confirm("Are you sure you want to update the iBond weight? This can only be done every 24 hours.")) return;
-    setLoading(true);
-    setError("");
-    try {
-      await contract.methods.updateWeight().send({ from: account });
-      alert("iBond weight updated successfully!");
-    } catch (err) {
-      const errorMessage = err.message.includes("WeightUpdateTooSoon")
-        ? "Weight update too soon; please wait 24 hours since the last update"
-        : `Error updating weight: ${err.message}`;
-      setError(errorMessage);
-      console.error("Update weight error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="bg-white bg-opacity-90 shadow-lg rounded-lg p-6 card">
       <h2 className="text-xl font-semibold mb-4 text-[#4B0082]">Admin Panel - {contractSymbol}</h2>
-      {contractSymbol === "PLSTR" && (
-        <>
-          <h3 className="text-lg font-medium mb-2">Update iBond Weight</h3>
-          <button
-            onClick={handleUpdateWeight}
-            disabled={loading}
-            className="btn-primary mb-4"
-          >
-            {loading ? "Processing..." : "Update Weight"}
-          </button>
-        </>
-      )}
       {isController ? (
         <>
           {contractSymbol !== "PLSTR" && (
@@ -265,7 +221,7 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsCon
         </>
       ) : (
         <p className="text-[#8B0000] mt-2">
-          {contractSymbol === "PLSTR" ? "Controller-only actions restricted." : "Only the strategy controller can access admin functions."}
+          Only the controller can access admin functions.
         </p>
       )}
       {error && <p className="text-[#8B0000] mt-2">{error}</p>}
