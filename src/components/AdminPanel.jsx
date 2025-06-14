@@ -7,11 +7,10 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsCon
   const [depositAmount, setDepositAmount] = useState("");
   const [displayDepositAmount, setDisplayDepositAmount] = useState("");
   const [vPlsBalance, setVPlsBalance] = useState("0");
-  const [isController, setIsController] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const CONTROLLER_ADDRESS = "0x6aaE8556C69b795b561CB75ca83aF6187d2F0AF5"; // Same for PLSTR, xBOND, iBOND
+  const CONTROLLER_ADDRESS = "0x6aaE8556C69b795b561CB75ca83aF6187d2F0AF5";
 
   // Null checks for props
   if (!web3 || !contract || !account || !chainId || !contractSymbol) {
@@ -40,23 +39,18 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsCon
     }
   };
 
-  // Check if the user is the controller and fetch vPLS balance
+  // Fetch vPLS balance for PLSTR
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Hardcoded controller check for all contracts
-        setIsController(account.toLowerCase() === CONTROLLER_ADDRESS.toLowerCase());
-
-        console.log("AdminPanel controller check:", {
+        console.log("AdminPanel loaded:", {
           contractSymbol,
           account,
           controllerAddress: CONTROLLER_ADDRESS,
-          isController: account.toLowerCase() === CONTROLLER_ADDRESS.toLowerCase(),
           appIsController,
           contractAddress: contract.options.address,
         });
 
-        // Fetch vPLS balance for PLSTR
         if (contractSymbol === "PLSTR") {
           const vPlsContract = new web3.eth.Contract(vPLS_ABI, tokenAddresses[369].vPLS);
           const balance = await vPlsContract.methods.balanceOf(account).call();
@@ -68,7 +62,6 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsCon
           contractSymbol,
           contractAddress: contract.options.address,
         });
-        setIsController(false);
         setError("Failed to load admin data");
       }
     };
@@ -113,10 +106,6 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsCon
       setError("Please enter a valid pair address");
       return;
     }
-    if (!isController) {
-      setError("Only the controller can set the pair address");
-      return;
-    }
     setLoading(true);
     setError("");
     try {
@@ -133,10 +122,6 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsCon
 
   const handleDepositTokens = async () => {
     if (contractSymbol !== "PLSTR") return;
-    if (!isController) {
-      setError("Only the controller can deposit vPLS");
-      return;
-    }
     if (!depositAmount || Number(depositAmount) <= 0 || Number(depositAmount) > Number(vPlsBalance)) {
       setError("Please enter a valid vPLS amount within your balance");
       return;
@@ -168,61 +153,53 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsCon
   return (
     <div className="bg-white bg-opacity-90 shadow-lg rounded-lg p-6 card">
       <h2 className="text-xl font-semibold mb-4 text-[#4B0082]">Admin Panel - {contractSymbol}</h2>
-      {isController ? (
+      {contractSymbol !== "PLSTR" && (
         <>
-          {contractSymbol !== "PLSTR" && (
-            <>
-              <h3 className="text-lg font-medium mb-2">Set Pair Address (Controller Only)</h3>
-              <div className="mb-4">
-                <input
-                  type="text"
-                  value={pairAddress}
-                  onChange={(e) => setPairAddress(e.target.value)}
-                  placeholder="Enter pair address"
-                  className="w-full p-2 border rounded-lg"
-                  disabled={loading}
-                />
-              </div>
-              <button
-                onClick={handleSetPairAddress}
-                disabled={loading || !pairAddress || !web3.utils.isAddress(pairAddress)}
-                className="btn-primary mb-4"
-              >
-                {loading ? "Processing..." : "Set Pair Address"}
-              </button>
-            </>
-          )}
-          {contractSymbol === "PLSTR" && (
-            <>
-              <h3 className="text-lg font-medium mb-2">Deposit vPLS (Controller Only)</h3>
-              <p className="text-gray-600 mb-2">
-                vPLS Balance: <span className="text-[#4B0082]">{formatNumber(vPlsBalance)} vPLS</span>
-              </p>
-              <div className="mb-4">
-                <label className="text-gray-600">Amount (vPLS)</label>
-                <input
-                  type="text"
-                  value={displayDepositAmount}
-                  onChange={handleDepositAmountChange}
-                  placeholder="Enter vPLS amount"
-                  className="w-full p-2 border rounded-lg"
-                  disabled={loading}
-                />
-              </div>
-              <button
-                onClick={handleDepositTokens}
-                disabled={loading || !depositAmount || Number(depositAmount) <= 0}
-                className="btn-primary mb-4"
-              >
-                {loading ? "Processing..." : "Deposit vPLS"}
-              </button>
-            </>
-          )}
+          <h3 className="text-lg font-medium mb-2">Set Pair Address</h3>
+          <div className="mb-4">
+            <input
+              type="text"
+              value={pairAddress}
+              onChange={(e) => setPairAddress(e.target.value)}
+              placeholder="Enter pair address"
+              className="w-full p-2 border rounded-lg"
+              disabled={loading}
+            />
+          </div>
+          <button
+            onClick={handleSetPairAddress}
+            disabled={loading || !pairAddress || !web3.utils.isAddress(pairAddress)}
+            className="btn-primary mb-4"
+          >
+            {loading ? "Processing..." : "Set Pair Address"}
+          </button>
         </>
-      ) : (
-        <p className="text-[#8B0000] mt-2">
-          Only the controller can access admin functions.
-        </p>
+      )}
+      {contractSymbol === "PLSTR" && (
+        <>
+          <h3 className="text-lg font-medium mb-2">Deposit vPLS</h3>
+          <p className="text-gray-600 mb-2">
+            vPLS Balance: <span className="text-[#4B0082]">{formatNumber(vPlsBalance)} vPLS</span>
+          </p>
+          <div className="mb-4">
+            <label className="text-gray-600">Amount (vPLS)</label>
+            <input
+              type="text"
+              value={displayDepositAmount}
+              onChange={handleDepositAmountChange}
+              placeholder="Enter vPLS amount"
+              className="w-full p-2 border rounded-lg"
+              disabled={loading}
+            />
+          </div>
+          <button
+            onClick={handleDepositTokens}
+            disabled={loading || !depositAmount || Number(depositAmount) <= 0}
+            className="btn-primary mb-4"
+          >
+            {loading ? "Processing..." : "Deposit vPLS"}
+          </button>
+        </>
       )}
       {error && <p className="text-[#8B0000] mt-2">{error}</p>}
     </div>
