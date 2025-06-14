@@ -1,8 +1,72 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { formatNumber } from "../utils/format";
 
 const WeightUpdate = ({ contract, account, web3, chainId }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [weightData, setWeightData] = useState({
+    currentWeight: "0",
+    lastUpdate: 0,
+    timeUntilNextUpdate: 0,
+  });
+
+  const WEIGHT_COOLDOWN = 86400; // 24 hours in seconds
+
+  const fromUnits = (value) => {
+    try {
+      if (!value || value === "0") return "0";
+      return web3.utils.fromWei(value.toString(), "ether");
+    } catch (err) {
+      console.error("Error converting value:", { value, error: err.message });
+      return "0";
+    }
+  };
+
+  // Format time remaining (seconds) to hours/minutes
+  const formatTimeRemaining = (seconds) => {
+    if (seconds <= 0) return "0";
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${hours} hour${hours !== 1 ? "s" : ""}, ${minutes} minute${minutes !== 1 ? "s" : ""}`;
+  };
+
+  const fetchWeightData = async () => {
+    if (!contract || !web3 || chainId !== 369) return;
+    try {
+      const [currentWeight, lastUpdate] = await Promise.all([
+        contract.methods.getCurrentWeight().call(),
+        contract.methods.getLastWeightUpdate().call(),
+      ]);
+
+      const lastUpdateTimestamp = Number(lastUpdate);
+      const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
+      const timeSinceLastUpdate = currentTime - lastUpdateTimestamp;
+      const timeUntilNextUpdate = Math.max(0, WEIGHT_COOLDOWN - timeSinceLastUpdate);
+
+      setWeightData({
+        currentWeight: fromUnits(currentWeight),
+        lastUpdate: lastUpdateTimestamp,
+        timeUntilNextUpdate,
+      });
+    } catch (err) {
+      console.error("Error fetching weight data:", {
+        error: err.message,
+      });
+      setError("Failed to load weight data");
+    }
+  };
+
+  useEffect(() => {
+    fetchWeightData();
+    // Update countdown every minute
+    const interval = setInterval(() => {
+      setWeightData((prev) => {
+        const newTimeUntilNextUpdate = Math.max(0, prev.timeUntilNextUpdate - 60);
+        return { ...prev, timeUntilNextUpdate };
+      });
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [contract, web3, chainId]);
 
   const handleUpdateWeight = async () => {
     if (!window.confirm("Are you sure you want to update the iBond weight? This can only be done every 24 hours.")) return;
@@ -11,6 +75,8 @@ const WeightUpdate = ({ contract, account, web3, chainId }) => {
     try {
       await contract.methods.updateWeight().send({ from: account });
       alert("iBond weight updated successfully!");
+      // Refresh data
+      await fetchWeightData();
     } catch (err) {
       const errorMessage = err.message.includes("WeightUpdateTooSoon")
         ? "Weight update too soon; please wait 24 hours since the last update"
@@ -27,10 +93,25 @@ const WeightUpdate = ({ contract, account, web3, chainId }) => {
   return (
     <div className="bg-white bg-opacity-90 shadow-lg rounded-lg p-6 card">
       <h2 className="text-xl font-semibold mb-4 text-[#4B0082]">Update iBond Weight</h2>
+      <p className="text-gray-600">
+        Current Weight: <span className="text-[#4B0082]">{formatNumber(weightData.currentWeight)}</span>
+      </p>
+      <p className="text-gray-600">
+        Last Update:{" "}
+        <span className="text-[#4B0082]">
+          {weightData.lastUpdate ? new Date(weightData.lastUpdate * 1000).toLocaleString() : "Never"}
+        </span>
+      </p>
+      <p className="text-gray-600">
+        Next Update Available In:{" "}
+        <span className="text-[#4B0082]">
+          {formatTimeRemaining(weightData.timeUntilNextUpdate)}
+        </span>
+      </p>
       <button
         onClick={handleUpdateWeight}
-        disabled={loading}
-        className="btn-primary"
+        disabled={loading || weightData.timeUntilNextUpdate > 0}
+        className="btn-primary mt-4"
       >
         {loading ? "Processing..." : "Update Weight"}
       </button>
