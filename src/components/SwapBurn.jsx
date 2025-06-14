@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { formatNumber } from "../utils/format";
 
-const Burn = ({ web3, contract, account, chainId, contractSymbol }) => {
+const SwapBurn = ({ web3, contract, account, chainId, contractSymbol }) => {
   const [accumulatedBalance, setAccumulatedBalance] = useState("0");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -17,19 +17,20 @@ const Burn = ({ web3, contract, account, chainId, contractSymbol }) => {
   };
 
   const fetchAccumulatedBalance = async () => {
-    if (!web3 || !contract || chainId !== 369) return;
+    if (!web3 || !contract || !account || chainId !== 369) return;
     try {
       setError("");
-      const balance = await contract.methods.balanceOf(address(this)).call(); // Proxy for contract-held tokens
+      const balance = await contract.methods.balanceOf(contract.options.address).call();
       setAccumulatedBalance(fromUnits(balance));
     } catch (err) {
-      setError(`Failed to load balance: ${err.message}`);
+      setError(`Failed to load contract balance: ${err.message}`);
+      console.error("Fetch balance error:", err);
     }
   };
 
   useEffect(() => {
-    if (web3 && contract && chainId === 369) fetchAccumulatedBalance();
-  }, [web3, contract, chainId, contractSymbol]);
+    if (web3 && contract && account && chainId === 369) fetchAccumulatedBalance();
+  }, [web3, contract, account, chainId, contractSymbol]);
 
   const handleBurn = async () => {
     if (!window.confirm(`Are you sure you want to burn accumulated ${contractSymbol}? This is irreversible.`)) return;
@@ -42,6 +43,7 @@ const Burn = ({ web3, contract, account, chainId, contractSymbol }) => {
       fetchAccumulatedBalance();
     } catch (err) {
       setError(`Error burning tokens: ${err.message}`);
+      console.error("Burn error:", err);
     } finally {
       setLoading(false);
     }
@@ -69,4 +71,4 @@ const Burn = ({ web3, contract, account, chainId, contractSymbol }) => {
   );
 };
 
-export default Burn;
+export default SwapBurn;
