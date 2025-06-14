@@ -27,7 +27,10 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
   };
 
   const fetchUserData = async () => {
-    if (!web3 || !contract || !account || chainId !== 369) return;
+    if (!web3 || !contract || !account || chainId !== 369) {
+      console.warn("fetchUserData: Invalid inputs", { web3: !!web3, contract: !!contract, account, chainId });
+      return;
+    }
     try {
       setLoading(true);
       setError("");
@@ -66,18 +69,30 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
         // Note: redeemShares is nonpayable, so redeemableToken remains "0" unless a view function is provided
       } else {
         // Fetch PLSTR-specific data
-        const [claimablePLSTR, xBondBalance, iBondBalance] = await contract.methods.getClaimEligibility(account).call();
+        const result = await contract.methods.getClaimEligibility(account).call();
+        console.log("getClaimEligibility raw result:", { result, account, contractAddress: contract.options.address });
+        const [claimablePLSTR, xBondBalance, iBondBalance, , ] = result; // Skip last two values
+        console.log("getClaimEligibility parsed:", {
+          claimablePLSTR,
+          xBondBalance,
+          iBondBalance,
+          account,
+          contractAddress: contract.options.address,
+        });
         data.claimablePLSTR = fromUnits(claimablePLSTR);
         data.xBondBalance = fromUnits(xBondBalance);
         data.iBondBalance = fromUnits(iBondBalance);
         // Placeholder for redeemable vPLS (requires a view function in PLSTR contract)
-        // Example: data.redeemableToken = fromUnits(await contract.methods.someRedeemViewMethod(balance).call());
       }
 
       setUserData(data);
     } catch (err) {
       setError(`Failed to load user data: ${err.message}`);
-      console.error("Fetch user data error:", err);
+      console.error("Fetch user data error:", {
+        error: err.message,
+        account,
+        contractAddress: contract.options.address,
+      });
     } finally {
       setLoading(false);
     }
@@ -109,7 +124,6 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
           </p>
           {contractSymbol !== "PLSTR" && (
             <>
-              {/* Remove redeemable display until a view function is provided */}
               <p className="text-gray-600">
                 vPLS Balance: <span className="text-[#4B0082]">{formatNumber(userData.vPlsBalance)} vPLS</span>
               </p>
@@ -132,8 +146,6 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
               <p className="text-gray-600">
                 iBOND Balance: <span className="text-[#4B0082]">{formatNumber(userData.iBondBalance)} iBOND</span>
               </p>
-              {/* Placeholder for redeemable vPLS display */}
-              {/* <p className="text-gray-600">Redeemable vPLS: <span className="text-[#4B0082]">{formatNumber(userData.redeemableToken)} vPLS</span></p> */}
             </>
           )}
         </>
