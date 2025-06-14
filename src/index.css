@@ -8,6 +8,7 @@ body {
 
 .gradient-bg {
   background: linear-gradient(135deg, #8B0000 0%, #191970 50%, #4B0082 100%);
+  /* Matches the logo's gradient: red (#8B0000) to blue (#191970) to purple (#4B0082) */
 }
 
 .card {
@@ -20,13 +21,27 @@ body {
 }
 
 .btn-primary {
-  @apply bg-gradient-to-r from-[#8B0000] to-[#4B0082] text-white px-4 py-2 rounded-lg hover:from-[#A52A2A] hover:to-[#6A5ACD] transition-all duration-200;
+  @apply text-white px-4 py-2 rounded-lg hover:transition-all duration-200;
+  background: linear-gradient(90deg, #8B0000 0%, #191970 50%, #4B0082 100%);
+  /* Gradient matching logo colors */
+}
+
+.btn-primary:hover {
+  background: linear-gradient(90deg, #A52A2A 0%, #1E1A7B 50%, #5D0E8B 100%);
+  /* Slightly darker shades for hover effect */
 }
 
 .btn-primary:disabled {
   @apply opacity-60 cursor-not-allowed;
+  background: linear-gradient(90deg, #D3D3D3 0%, #A9A9A9 50%, #8A8A8A 100%);
+  /* Grayed-out gradient for disabled state */
 }
 
 .footer-link {
-  @apply text-[#4B0082] hover:text-[#8B0000] transition-colors;
+  @apply hover:transition-colors;
+  color: #5D0E8B; /* Purple from logo */
+}
+
+.footer-link:hover {
+  color: #A52A2A; /* Red from logo */
 }
