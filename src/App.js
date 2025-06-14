@@ -4,10 +4,11 @@ import ContractInfo from "./components/ContractInfo";
 import UserInfo from "./components/UserInfo";
 import IssueShares from "./components/IssueShares";
 import RedeemShares from "./components/RedeemShares";
-import SwapBurn from "./components/SwapBurn";
+import Burn from "./components/Burn"; // Updated from SwapBurn
 import ClaimPLSTR from "./components/ClaimPLSTR";
+import DepositTokens from "./components/DepositTokens"; // New component
 import AdminPanel from "./components/AdminPanel";
-import { getWeb3, getAccount, contractAddresses } from "./web3";
+import { getWeb3, getAccount, getContract } from "./web3";
 import "./index.css";
 
 const App = () => {
@@ -48,12 +49,10 @@ const App = () => {
       }
       setAccount(account);
 
-      const contractAddress = contractAddresses[369]?.[contractSymbol];
-      if (!contractAddress) {
-        throw new Error(`Contract address not found for ${contractSymbol} on PulseChain`);
+      const contractInstance = await getContract(web3Instance, contractSymbol);
+      if (!contractInstance) {
+        throw new Error(`Failed to initialize ${contractSymbol} contract`);
       }
-
-      const contractInstance = new web3Instance.eth.Contract(null, contractAddress); // ABI placeholder
       setContract(contractInstance);
 
       const isOwner = account.toLowerCase() === CREATOR_ADDRESS.toLowerCase();
@@ -155,13 +154,23 @@ const App = () => {
               chainId={chainId}
               contractSymbol={contractSymbol}
             />
-            <IssueShares
-              contract={contract}
-              account={account}
-              web3={web3}
-              chainId={chainId}
-              contractSymbol={contractSymbol}
-            />
+            {contractSymbol !== "PLSTR" ? (
+              <IssueShares
+                contract={contract}
+                account={account}
+                web3={web3}
+                chainId={chainId}
+                contractSymbol={contractSymbol}
+              />
+            ) : (
+              <DepositTokens
+                contract={contract}
+                account={account}
+                web3={web3}
+                chainId={chainId}
+                contractSymbol={contractSymbol}
+              />
+            )}
             <RedeemShares
               contract={contract}
               account={account}
@@ -178,7 +187,7 @@ const App = () => {
                 contractSymbol={contractSymbol}
               />
             ) : (
-              <SwapBurn
+              <Burn
                 contract={contract}
                 account={account}
                 web3={web3}
