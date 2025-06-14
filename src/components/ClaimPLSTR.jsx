@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { formatNumber } from "../utils/format";
-import { tokenAddresses } from "../web3";
 
-  const ClaimPLSTR = ({ contract, account, web3, chainId, contractSymbol }) => {
+const ClaimPLSTR = ({ contract, account, web3, chainId, contractSymbol }) => {
   const [pendingPLSTR, setPendingPLSTR] = useState("0");
   const [xBondBalance, setXBondBalance] = useState("0");
   const [iBondBalance, setIBondBalance] = useState("0");
@@ -17,22 +16,29 @@ import { tokenAddresses } from "../web3";
     try {
       const result = await contract.methods.getClaimEligibility(account).call();
       console.log("getClaimEligibility raw result:", { result, type: typeof result, account, contractAddress: contract.options.address });
+      
       let claimablePLSTR, xBondBal, iBondBal;
       if (Array.isArray(result) && result.length === 5) {
         [claimablePLSTR, xBondBal, iBondBal, , ] = result;
-        console.log("getClaimEligibility parsed as tuple:", { claimablePLSTR, xBondBal, iBondBal });
+        console.log("getClaimEligibility parsed as array:", { claimablePLSTR, xBondBal, iBondBal });
+      } else if (typeof result === "object" && result !== null) {
+        // Handle object return (e.g., { "0": value, ... } or { claimablePLSTR: value, ... })
+        claimablePLSTR = result.claimablePLSTR || result[0] || result;
+        xBondBal = result.xBondBalance || result[1] || "0";
+        iBondBal = result.iBondBalance || result[2] || "0";
+        console.log("getClaimEligibility parsed as object:", { claimablePLSTR, xBondBal, iBondBal });
       } else {
-        console.warn("Unexpected getClaimEligibility result:", { result });
-        // Fallback: Try single value or object property
-        claimablePLSTR = typeof result === "object" && result.claimablePLSTR ? result.claimablePLSTR : result;
-        xBondBal = typeof result === "object" && result.xBondBalance ? result.xBondBalance : "0";
-        iBondBal = typeof result === "object" && result.iBondBalance ? result.iBondBalance : "0";
-        console.log("getClaimEligibility fallback parsed:", { claimablePLSTR, xBondBal, iBondBal });
+        console.warn("Unexpected getClaimEligibility result, assuming single value:", { result });
+        claimablePLSTR = result;
+        xBondBal = "0";
+        iBondBal = "0";
       }
+
       // Validate numbers
       if (isNaN(Number(claimablePLSTR)) || isNaN(Number(xBondBal)) || isNaN(Number(iBondBal))) {
-        throw new Error("Invalid number format in getClaimEligibility result");
+        throw new Error(`Invalid number format in getClaimEligibility: ${JSON.stringify({ claimablePLSTR, xBondBal, iBondBal })}`);
       }
+
       setPendingPLSTR(web3.utils.fromWei(claimablePLSTR.toString(), "ether"));
       setXBondBalance(web3.utils.fromWei(xBondBal.toString(), "ether"));
       setIBondBalance(web3.utils.fromWei(iBondBal.toString(), "ether"));
