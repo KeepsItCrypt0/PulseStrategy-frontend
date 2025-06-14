@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { formatNumber } from "../utils/format";
-import { tokenAddresses } from "../web3";
+import { tokenAddresses, vPLS_ABI } from "../web3";
 
 const DepositTokens = ({ web3, contract, account, chainId, contractSymbol }) => {
   const [amount, setAmount] = useState("");
   const [displayAmount, setDisplayAmount] = useState("");
+  const [vPlsBalance, setVPlsBalance] = useState("0");
+  const [isController, setIsController] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -46,31 +48,41 @@ const DepositTokens = ({ web3, contract, account, chainId, contractSymbol }) => 
     }
   };
 
-  const fetchUserBalance = async () => {
+  const fetchUserData = async () => {
     if (!web3 || !contract || !account || chainId !== 369) return;
     try {
-      const vPlsContract = new web3.eth.Contract(tokenAddresses[369].vPLS_ABI, tokenAddresses[369].vPLS);
+      // Fetch vPLS balance
+      const vPlsContract = new web3.eth.Contract(vPLS_ABI, tokenAddresses[369].vPLS);
       const balance = await vPlsContract.methods.balanceOf(account).call();
-      console.log("vPLS Balance:", fromUnits(balance)); // Debug log
+      setVPlsBalance(fromUnits(balance));
+
+      // Check if account is strategy controller
+      const controller = await contract.methods._strategyController().call();
+      setIsController(controller.toLowerCase() === account.toLowerCase());
     } catch (err) {
-      setError(`Failed to load vPLS balance: ${err.message}`);
+      setError(`Failed to load user data: ${err.message}`);
+      console.error("Fetch user data error:", err);
     }
   };
 
   useEffect(() => {
-    if (web3 && contract && account && chainId === 369) fetchUserBalance();
+    if (web3 && contract && account && chainId === 369) fetchUserData();
   }, [web3, contract, account, chainId]);
 
   const handleDepositTokens = async () => {
-    if (!amount || Number(amount) <= 0) {
-      setError("Please enter a valid amount");
+    if (!isController) {
+      setError("Only the strategy controller can deposit vPLS");
+      return;
+    }
+    if (!amount || Number(amount) <= 0 || Number(amount) > Number(vPlsBalance)) {
+      setError("Please enter a valid amount within your vPLS balance");
       return;
     }
     setLoading(true);
     setError("");
     try {
       const vPlsAmount = toTokenUnits(amount);
-      const vPlsContract = new web3.eth.Contract(tokenAddresses[369].vPLS_ABI, tokenAddresses[369].vPLS);
+      const vPlsContract = new web3.eth.Contract(vPLS_ABI, tokenAddresses[369].vPLS);
       const allowance = await vPlsContract.methods.allowance(account, contract.options.address).call();
       if (BigInt(allowance) < BigInt(vPlsAmount)) {
         await vPlsContract.methods.approve(contract.options.address, vPlsAmount).send({ from: account });
@@ -79,8 +91,10 @@ const DepositTokens = ({ web3, contract, account, chainId, contractSymbol }) => 
       alert(`Successfully deposited ${amount} vPLS!`);
       setAmount("");
       setDisplayAmount("");
+      fetchUserData(); // Refresh balance
     } catch (err) {
       setError(`Error depositing tokens: ${err.message}`);
+      console.error("Deposit error:", err);
     } finally {
       setLoading(false);
     }
@@ -90,7 +104,10 @@ const DepositTokens = ({ web3, contract, account, chainId, contractSymbol }) => 
 
   return (
     <div className="bg-white bg-opacity-90 shadow-lg rounded-lg p-6 card">
-      <h2 className="text-xl font-semibold mb-4 text-[#4B0082]">Deposit vPLS</h2>
+      <h2 className="text-xl font-semibold mb-4 text-[#4B0082]">Deposit vPLS (Controller Only)</h2>
+      <p className="text-gray-600 mb-2">
+        vPLS Balance: <span className="text-[#4B0082]">{formatNumber(vPlsBalance)} vPLS</span>
+      </p>
       <div className="mb-4">
         <label className="text-gray-600">Amount (vPLS)</label>
         <input
@@ -99,17 +116,20 @@ const DepositTokens = ({ web3, contract, account, chainId, contractSymbol }) => 
           onChange={handleAmountChange}
           placeholder="Enter vPLS amount"
           className="w-full p-2 border rounded-lg"
-          disabled={loading}
+          disabled={loading || !isController}
         />
       </div>
       <button
         onClick={handleDepositTokens}
-        disabled={loading || !amount || Number(amount) <= 0}
+        disabled={loading || !amount || Number(amount) <= 0 || !isController}
         className="btn-primary"
       >
         {loading ? "Processing..." : "Deposit vPLS"}
       </button>
       {error && <p className="text-[#8B0000] mt-2">{error}</p>}
+      {!isController && (
+        <p className="text-[#8B0000] mt-2">Only the strategy controller can deposit vPLS tokens.</p>
+      )}
     </div>
   );
 };
