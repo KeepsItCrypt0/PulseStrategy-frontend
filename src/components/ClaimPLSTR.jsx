@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { formatNumber } from "../utils/format";
-import { tokenAddresses } from "../web3";
+import { tokenAddresses, xBond_ABI, iBond_ABI, PLSTR_ABI } from "../web3";
 
   const ClaimPLSTR = ({ contract, account, web3, chainId, contractSymbol }) => {
   const [pendingPLSTR, setPendingPLSTR] = useState("0");
