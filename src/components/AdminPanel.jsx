@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { tokenAddresses, vPLS_ABI } from "../web3";
+import { tokenAddresses, vPlsABI } from "../web3";
 import { formatNumber } from "../utils/format";
 
 const AdminPanel = ({ contract, account, web3, chainId, contractSymbol }) => {
@@ -10,6 +10,8 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol }) => {
   const [isController, setIsController] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const PLSTR_CONTROLLER = "0x6aaE8556C69b795b561CB75ca83aF6187d2F0AF5";
 
   // Null checks for props
   if (!web3 || !contract || !account || !chainId || !contractSymbol) {
@@ -43,8 +45,19 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol }) => {
     const fetchData = async () => {
       try {
         // Check controller
-        const controller = await contract.methods._strategyController().call();
-        setIsController(controller.toLowerCase() === account.toLowerCase());
+        if (contractSymbol === "PLSTR") {
+          // Hardcoded controller check for PLSTR
+          setIsController(account.toLowerCase() === PLSTR_CONTROLLER.toLowerCase());
+        } else {
+          // Use _strategyController for xBOND and iBOND
+          const controller = await contract.methods._strategyController().call();
+          if (controller && web3.utils.isAddress(controller)) {
+            setIsController(controller.toLowerCase() === account.toLowerCase());
+          } else {
+            console.warn("Invalid controller address returned:", controller);
+            setIsController(false);
+          }
+        }
 
         // Fetch vPLS balance for PLSTR
         if (contractSymbol === "PLSTR") {
@@ -53,7 +66,12 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol }) => {
           setVPlsBalance(fromUnits(balance));
         }
       } catch (err) {
-        console.error("Error fetching admin data:", err);
+        console.error("Error fetching admin data:", {
+          error: err.message,
+          contractSymbol,
+          contractAddress: contract.options.address,
+        });
+        setIsController(false);
         setError("Failed to load admin data");
       }
     };
@@ -96,6 +114,10 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol }) => {
       setError("Please enter a valid pair address");
       return;
     }
+    if (!isController) {
+      setError("Only the strategy controller can set the pair address");
+      return;
+    }
     setLoading(true);
     setError("");
     try {
@@ -112,7 +134,7 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol }) => {
 
   const handleDepositTokens = async () => {
     if (contractSymbol !== "PLSTR") return;
-    if (!isController) {
+    if (account.toLowerCase() !== PLSTR_CONTROLLER.toLowerCase()) {
       setError("Only the strategy controller can deposit vPLS");
       return;
     }
@@ -183,7 +205,7 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol }) => {
         <>
           {contractSymbol !== "PLSTR" && (
             <>
-              <h3 className="text-lg font-medium mb-2">Set Pair Address</h3>
+              <h3 className="text-lg font-medium mb-2">Set Pair Address (Controller Only)</h3>
               <div className="mb-4">
                 <input
                   type="text"
@@ -203,7 +225,7 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol }) => {
               </button>
             </>
           )}
-          {contractSymbol === "PLSTR" && (
+          {contractSymbol === "PLSTR" && account.toLowerCase() === PLSTR_CONTROLLER.toLowerCase() && (
             <>
               <h3 className="text-lg font-medium mb-2">Deposit vPLS (Controller Only)</h3>
               <p className="text-gray-600 mb-2">
@@ -231,8 +253,10 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol }) => {
           )}
         </>
       )}
-      {!isController && contractSymbol !== "PLSTR" && (
-        <p className="text-[#8B0000] mt-2">Controller-only actions restricted.</p>
+      {!isController && (
+        <p className="text-[#8B0000] mt-2">
+          {contractSymbol === "PLSTR" ? "Controller-only actions restricted." : "Only the strategy controller can access admin functions."}
+        </p>
       )}
       {error && <p className="text-[#8B0000] mt-2">{error}</p>}
     </div>
