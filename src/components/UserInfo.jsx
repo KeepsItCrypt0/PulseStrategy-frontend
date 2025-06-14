@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { formatNumber } from "../utils/format";
-import { tokenAddresses } from "../web3";
+import { tokenAddresses, vPLS_ABI, plsxABI, incABI } from "../web3";
 
 const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
   const [userData, setUserData] = useState({
@@ -9,8 +9,9 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
     vPlsBalance: "0",
     plsxBalance: "0",
     incBalance: "0",
-    xBondClaimable: "0",
-    iBondClaimable: "0",
+    claimablePLSTR: "0",
+    xBondBalance: "0",
+    iBondBalance: "0",
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -31,6 +32,7 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
       setLoading(true);
       setError("");
 
+      // Fetch contract balance
       const balance = await contract.methods.balanceOf(account).call();
       let data = {
         balance: fromUnits(balance),
@@ -38,42 +40,44 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
         vPlsBalance: "0",
         plsxBalance: "0",
         incBalance: "0",
-        xBondClaimable: "0",
-        iBondClaimable: "0",
+        claimablePLSTR: "0",
+        xBondBalance: "0",
+        iBondBalance: "0",
       };
 
-      if (contractSymbol !== "PLSTR" && balance !== "0") {
-        const config = contractSymbol === "xBOND" ? { token: "PLSX" } : { token: "INC" };
-        const redeemable = await contract.methods.redeemShares(balance).call(); // Adjust if a specific redeemable method exists
-        data.redeemableToken = fromUnits(redeemable, 18);
-      }
-
+      // Fetch token balances for xBOND and iBOND
       const tokenAddrs = tokenAddresses[369];
       if (contractSymbol !== "PLSTR") {
         if (tokenAddrs.vPLS) {
-          const vPlsContract = new web3.eth.Contract(null, tokenAddrs.vPLS);
+          const vPlsContract = new web3.eth.Contract(vPLS_ABI, tokenAddrs.vPLS);
           const vPlsBalance = await vPlsContract.methods.balanceOf(account).call();
           data.vPlsBalance = fromUnits(vPlsBalance);
         }
         if (tokenAddrs.PLSX) {
-          const plsxContract = new web3.eth.Contract(null, tokenAddrs.PLSX);
+          const plsxContract = new web3.eth.Contract(plsxABI, tokenAddrs.PLSX);
           const plsxBalance = await plsxContract.methods.balanceOf(account).call();
           data.plsxBalance = fromUnits(plsxBalance);
         }
         if (tokenAddrs.INC) {
-          const incContract = new web3.eth.Contract(null, tokenAddrs.INC);
+          const incContract = new web3.eth.Contract(incABI, tokenAddrs.INC);
           const incBalance = await incContract.methods.balanceOf(account).call();
           data.incBalance = fromUnits(incBalance);
         }
+        // Note: redeemShares is nonpayable, so redeemableToken remains "0" unless a view function is provided
       } else {
+        // Fetch PLSTR-specific data
         const [claimablePLSTR, xBondBalance, iBondBalance] = await contract.methods.getClaimEligibility(account).call();
-        data.xBondClaimable = fromUnits(claimablePLSTR, 18); // Adjust index based on return structure
-        data.iBondClaimable = fromUnits(claimablePLSTR, 18); // Adjust if separate claimable amounts are returned
+        data.claimablePLSTR = fromUnits(claimablePLSTR);
+        data.xBondBalance = fromUnits(xBondBalance);
+        data.iBondBalance = fromUnits(iBondBalance);
+        // Placeholder for redeemable vPLS (requires a view function in PLSTR contract)
+        // Example: data.redeemableToken = fromUnits(await contract.methods.someRedeemViewMethod(balance).call());
       }
 
       setUserData(data);
     } catch (err) {
       setError(`Failed to load user data: ${err.message}`);
+      console.error("Fetch user data error:", err);
     } finally {
       setLoading(false);
     }
@@ -100,19 +104,36 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
         <p className="text-[#8B0000]">{error}</p>
       ) : (
         <>
-          <p className="text-gray-600">Balance: <span className="text-[#4B0082]">{formatNumber(userData.balance)} {contractSymbol}</span></p>
+          <p className="text-gray-600">
+            Balance: <span className="text-[#4B0082]">{formatNumber(userData.balance)} {contractSymbol}</span>
+          </p>
           {contractSymbol !== "PLSTR" && (
             <>
-              <p className="text-gray-600">Redeemable {contractSymbol === "xBOND" ? "PLSX" : "INC"}: <span className="text-[#4B0082]">{formatNumber(userData.redeemableToken)} {contractSymbol === "xBOND" ? "PLSX" : "INC"}</span></p>
-              <p className="text-gray-600">vPLS Balance: <span className="text-[#4B0082]">{formatNumber(userData.vPlsBalance)} vPLS</span></p>
-              <p className="text-gray-600">PLSX Balance: <span className="text-[#4B0082]">{formatNumber(userData.plsxBalance)} PLSX</span></p>
-              <p className="text-gray-600">INC Balance: <span className="text-[#4B0082]">{formatNumber(userData.incBalance)} INC</span></p>
+              {/* Remove redeemable display until a view function is provided */}
+              <p className="text-gray-600">
+                vPLS Balance: <span className="text-[#4B0082]">{formatNumber(userData.vPlsBalance)} vPLS</span>
+              </p>
+              <p className="text-gray-600">
+                PLSX Balance: <span className="text-[#4B0082]">{formatNumber(userData.plsxBalance)} PLSX</span>
+              </p>
+              <p className="text-gray-600">
+                INC Balance: <span className="text-[#4B0082]">{formatNumber(userData.incBalance)} INC</span>
+              </p>
             </>
           )}
           {contractSymbol === "PLSTR" && (
             <>
-              <p className="text-gray-600">Claimable PLSTR from xBOND: <span className="text-[#4B0082]">{formatNumber(userData.xBondClaimable)} PLSTR</span></p>
-              <p className="text-gray-600">Claimable PLSTR from iBOND: <span className="text-[#4B0082]">{formatNumber(userData.iBondClaimable)} PLSTR</span></p>
+              <p className="text-gray-600">
+                Claimable PLSTR: <span className="text-[#4B0082]">{formatNumber(userData.claimablePLSTR)} PLSTR</span>
+              </p>
+              <p className="text-gray-600">
+                xBOND Balance: <span className="text-[#4B0082]">{formatNumber(userData.xBondBalance)} xBOND</span>
+              </p>
+              <p className="text-gray-600">
+                iBOND Balance: <span className="text-[#4B0082]">{formatNumber(userData.iBondBalance)} iBOND</span>
+              </p>
+              {/* Placeholder for redeemable vPLS display */}
+              {/* <p className="text-gray-600">Redeemable vPLS: <span className="text-[#4B0082]">{formatNumber(userData.redeemableToken)} vPLS</span></p> */}
             </>
           )}
         </>
