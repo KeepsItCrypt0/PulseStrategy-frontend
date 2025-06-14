@@ -21,8 +21,8 @@ const RedeemShares = ({ contract, account, web3, chainId, contractSymbol }) => {
   };
 
   const tokenConfig = {
-    xBond: { symbol: "PLSX", address: tokenAddresses[369].PLSX, redeemMethod: "redeemShares" },
-    iBond: { symbol: "INC", address: tokenAddresses[369].INC, redeemMethod: "redeemShares" },
+    xBOND: { symbol: "PLSX", address: tokenAddresses[369].PLSX, redeemMethod: "redeemShares" },
+    iBOND: { symbol: "INC", address: tokenAddresses[369].INC, redeemMethod: "redeemShares" },
     PLSTR: { symbol: "vPLS", address: tokenAddresses[369].vPLS, redeemMethod: "redeemPLSTR" },
   };
 
@@ -89,17 +89,17 @@ const RedeemShares = ({ contract, account, web3, chainId, contractSymbol }) => {
       const shareAmount = web3.utils.toWei(amount, "ether");
       const metrics = await contract.methods.getContractMetrics().call();
       const contractTotalSupply = metrics[0]; // totalSupply
-      const tokenBalance = metrics[1]; // plsxBalance or incBalance or vPlsBalance
+      const tokenBalance = metrics[1]; // plsxBalance, incBalance, or vPlsBalance
       let redeemableAmount = "0";
 
-      if (contractTotalSupply !== "0") {
+      if (BigInt(contractTotalSupply) !== BigInt(0) && BigInt(tokenBalance) !== BigInt(0)) {
         redeemableAmount = (BigInt(tokenBalance) * BigInt(shareAmount)) / BigInt(contractTotalSupply);
       }
 
       setRedeemableAssets({
         vPls: isPLSTR ? fromUnits(redeemableAmount, tokenDecimals.vPLS) : "0",
-        plsx: contractSymbol === "xBond" ? fromUnits(redeemableAmount, tokenDecimals.PLSX) : "0",
-        inc: contractSymbol === "iBond" ? fromUnits(redeemableAmount, tokenDecimals.INC) : "0",
+        plsx: contractSymbol === "xBOND" ? fromUnits(redeemableAmount, tokenDecimals.PLSX) : "0",
+        inc: contractSymbol === "iBOND" ? fromUnits(redeemableAmount, tokenDecimals.INC) : "0",
       });
     } catch (err) {
       setError(`Failed to load redeemable assets: ${err.message}`);
