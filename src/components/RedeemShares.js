@@ -23,11 +23,7 @@ const RedeemShares = ({ contract, account, web3, chainId, contractSymbol }) => {
   const fromUnits = (balance, decimals) => {
     try {
       if (!balance || balance === "0") return "0";
-      const balanceStr = typeof balance === "bigint" ? balance.toString() : balance.toString();
-      if (decimals === 18) {
-        return web3.utils.fromWei(balanceStr, "ether");
-      }
-      return web3.utils.fromWei(balanceStr, "ether");
+      return web3.utils.fromWei(balance.toString(), "ether");
     } catch (err) {
       console.error("Error converting balance:", { balance, decimals, error: err.message });
       return "0";
@@ -35,19 +31,15 @@ const RedeemShares = ({ contract, account, web3, chainId, contractSymbol }) => {
   };
 
   const tokenConfig = {
-    xBOND: { symbol: "PLSX", address: tokenAddresses[369].PLSX, redeemMethod: "getRedeemablePLSX", abi: null },
-    iBOND: { symbol: "INC", address: tokenAddresses[369].INC, redeemMethod: "getRedeemableINC", abi: null },
+    xBOND: { symbol: "PLSX", address: tokenAddresses[369].PLSX, redeemMethod: "redeemShares", abi: null },
+    iBOND: { symbol: "INC", address: tokenAddresses[369].INC, redeemMethod: "redeemShares", abi: null },
     PLSTR: [
       { symbol: "vPLS", address: tokenAddresses[369].vPLS, abi: null },
-      { symbol: "PLSX", address: tokenAddresses[369].PLSX, abi: null },
-      { symbol: "INC", address: tokenAddresses[369].INC, abi: null },
     ],
   };
 
   const isPLSTR = contractSymbol === "PLSTR";
   const tokens = isPLSTR ? tokenConfig.PLSTR : [tokenConfig[contractSymbol]];
-
-  console.log("RedeemShares: Initializing tokens", { contractSymbol, isPLSTR, tokens });
 
   const formatInputValue = (value) => {
     if (!value) return "";
@@ -87,15 +79,11 @@ const RedeemShares = ({ contract, account, web3, chainId, contractSymbol }) => {
       let assets = { vPls: "0", plsx: "0", inc: "0" };
 
       if (isPLSTR) {
-        const [vPls, plsx, inc] = await contract.methods.getRedeemableAssets(shareAmount).call();
-        assets = {
-          vPls: fromUnits(vPls, tokenDecimals.vPLS),
-          plsx: fromUnits(plsx, tokenDecimals.PLSX),
-          inc: fromUnits(inc, tokenDecimals.INC),
-        };
+        const vPlsBalance = await contract.methods.getContractMetrics().call(); // Adjust based on actual method
+        assets.vPls = fromUnits(vPlsBalance[1], tokenDecimals.vPLS); // Assuming vPlsBalance is index 1
       } else {
         const token = tokens[0];
-        const redeemable = await contract.methods[token.redeemMethod](shareAmount).call();
+        const redeemable = await contract.methods[token.redeemMethod](shareAmount).call(); // Placeholder, adjust if needed
         assets[token.symbol.toLowerCase()] = fromUnits(redeemable, tokenDecimals[token.symbol]);
       }
 
@@ -111,7 +99,6 @@ const RedeemShares = ({ contract, account, web3, chainId, contractSymbol }) => {
 
   useEffect(() => {
     if (web3 && contract && amount && chainId === 369) fetchRedeemableAssets();
-    else setRedeemableAssets({ vPls: "0", plsx: "0", inc: "0" });
   }, [amount, web3, contract, chainId, contractSymbol]);
 
   const handleRedeemShares = async () => {
@@ -126,7 +113,7 @@ const RedeemShares = ({ contract, account, web3, chainId, contractSymbol }) => {
       const redeemMethod = isPLSTR ? "redeemPLSTR" : "redeemShares";
       await contract.methods[redeemMethod](shareAmount).send({ from: account });
       const redemptionMessage = isPLSTR
-        ? `Successfully redeemed ${amount} ${contractSymbol} for ${formatNumber(redeemableAssets.vPls)} vPLS, ${formatNumber(redeemableAssets.plsx)} PLSX, ${formatNumber(redeemableAssets.inc)} INC!`
+        ? `Successfully redeemed ${amount} ${contractSymbol} for ${formatNumber(redeemableAssets.vPls)} vPLS!`
         : `Successfully redeemed ${amount} ${contractSymbol} for ${formatNumber(redeemableAssets[tokens[0].symbol.toLowerCase()])} ${tokens[0].symbol}!`;
       alert(redemptionMessage);
       setAmount("");
