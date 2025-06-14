@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { tokenAddresses, vPlsABI } from "../web3";
+import { tokenAddresses, vPLS_ABI } from "../web3";
 import { formatNumber } from "../utils/format";
 
 const AdminPanel = ({ contract, account, web3, chainId, contractSymbol }) => {
