@@ -14,6 +14,7 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
       plsxBackingRatio: "0",
       incBackingRatio: "0",
     },
+    issuanceStatus: { isActive: false, timeRemaining: 0 }, // Added
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -28,6 +29,14 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
     }
   };
 
+  // Format time remaining (seconds) to days/hours
+  const formatTimeRemaining = (seconds) => {
+    if (seconds <= 0) return "0";
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    return `${days} day${days !== 1 ? "s" : ""}, ${hours} hour${hours !== 1 ? "s" : ""}`;
+  };
+
   const fetchContractData = async () => {
     if (!contract || !web3 || chainId !== 369) return;
     try {
@@ -35,10 +44,17 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
       setError(null);
 
       const isPLSTR = contractSymbol === "PLSTR";
-      const [totalSupply, metrics] = await Promise.all([
+      const promises = [
         contract.methods.totalSupply().call(),
         contract.methods.getContractMetrics().call(),
-      ]);
+      ];
+
+      // Fetch issuance status only for xBOND and iBOND
+      if (!isPLSTR) {
+        promises.push(contract.methods.getIssuanceStatus().call());
+      }
+
+      const [totalSupply, metrics, issuanceStatus] = await Promise.all(promises);
 
       const data = {
         totalSupply: fromUnits(totalSupply),
@@ -60,11 +76,17 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
               plsxBackingRatio: contractSymbol === "xBOND" ? fromUnits(metrics[4]) : "0",
               incBackingRatio: contractSymbol === "iBOND" ? fromUnits(metrics[4]) : "0",
             },
+        issuanceStatus: isPLSTR
+          ? { isActive: false, timeRemaining: 0 }
+          : { isActive: issuanceStatus[0], timeRemaining: Number(issuanceStatus[1]) },
       };
 
       setContractData(data);
     } catch (err) {
-      console.error("Error fetching contract data:", err);
+      console.error("Error fetching contract data:", {
+        error: err.message,
+        contractSymbol,
+      });
       setError(`Failed to load ${contractSymbol} data: ${err.message}`);
     } finally {
       setLoading(false);
@@ -127,6 +149,20 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
                 Backing Ratio:{" "}
                 <span className="text-[#4B0082]">
                   {formatNumber(contractSymbol === "xBOND" ? contractData.metrics.plsxBackingRatio : contractData.metrics.incBackingRatio)}
+                </span>
+              </p>
+              <p className="text-gray-600">
+                Issuance Status:{" "}
+                <span className="text-[#4B0082]">
+                  {contractData.issuanceStatus.isActive ? "Active" : "Ended"}
+                </span>
+              </p>
+              <p className="text-gray-600">
+                Time Remaining:{" "}
+                <span className="text-[#4B0082]">
+                  {contractData.issuanceStatus.isActive
+                    ? formatTimeRemaining(contractData.issuanceStatus.timeRemaining)
+                    : "0"}
                 </span>
               </p>
             </>
