@@ -12,7 +12,11 @@ const WeightUpdate = ({ contract, account, web3, chainId }) => {
       await contract.methods.updateWeight().send({ from: account });
       alert("iBond weight updated successfully!");
     } catch (err) {
-      setError(`Error updating weight: ${err.message}`);
+      const errorMessage = err.message.includes("WeightUpdateTooSoon")
+        ? "Weight update too soon; please wait 24 hours since the last update"
+        : `Error updating weight: ${err.message}`;
+      setError(errorMessage);
+      console.error("Update weight error:", err);
     } finally {
       setLoading(false);
     }
