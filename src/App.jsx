@@ -28,6 +28,8 @@ const App = () => {
     iBOND: iBOND_ABI,
   };
 
+  const PLSTR_CONTROLLER = "0x6aaE8556C69b795b561CB75ca83aF6187d2F0AF5";
+
   const initializeApp = async () => {
     setLoading(true);
     setError("");
@@ -65,18 +67,33 @@ const App = () => {
 
       // Check if the user is the strategy controller
       try {
-        const controller = await contractInstance.methods._strategyController().call();
-        setIsController(controller.toLowerCase() === account.toLowerCase());
+        if (contractSymbol === "PLSTR") {
+          // Hardcoded controller check for PLSTR
+          setIsController(account.toLowerCase() === PLSTR_CONTROLLER.toLowerCase());
+        } else {
+          // Use _strategyController for xBOND and iBOND
+          const controller = await contractInstance.methods._strategyController().call();
+          if (controller && web3Instance.utils.isAddress(controller)) {
+            setIsController(controller.toLowerCase() === account.toLowerCase());
+          } else {
+            console.warn("Invalid controller address returned:", controller);
+            setIsController(false);
+          }
+        }
         console.log("Controller check:", {
           account,
-          isController: controller.toLowerCase() === account.toLowerCase(),
+          isController: account.toLowerCase() === (contractSymbol === "PLSTR" ? PLSTR_CONTROLLER : controller).toLowerCase(),
           chainId,
           contractAddress,
           contractSymbol,
         });
       } catch (err) {
-        console.error("Error checking strategy controller:", err);
-        setError("Failed to verify controller status");
+        console.error("Error checking strategy controller:", {
+          error: err.message,
+          contractAddress,
+          contractSymbol,
+        });
+        setIsController(false); // Default to false on error
       }
 
       console.log("App initialized:", {
@@ -86,7 +103,10 @@ const App = () => {
         contractSymbol,
       });
     } catch (error) {
-      console.error("App initialization failed:", error);
+      console.error("App initialization failed:", {
+        error: error.message,
+        contractSymbol,
+      });
       setError(`Initialization failed: ${error.message || "Unknown error"}`);
     } finally {
       setLoading(false);
