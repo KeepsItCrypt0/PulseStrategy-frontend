@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { tokenAddresses, vPLS_ABI } from "../web3";
 import { formatNumber } from "../utils/format";
 
-const AdminPanel = ({ contract, account, web3, chainId, contractSymbol }) => {
+const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsController }) => {
   const [pairAddress, setPairAddress] = useState("");
   const [depositAmount, setDepositAmount] = useState("");
   const [displayDepositAmount, setDisplayDepositAmount] = useState("");
@@ -16,8 +16,8 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol }) => {
   // Null checks for props
   if (!web3 || !contract || !account || !chainId || !contractSymbol) {
     console.warn("AdminPanel: Missing required props", {
-      web3,
-      contract,
+      web3: !!web3,
+      contract: !!contract,
       account,
       chainId,
       contractSymbol,
@@ -44,24 +44,33 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Check controller
+        let controllerAddress;
         if (contractSymbol === "PLSTR") {
           // Hardcoded controller check for PLSTR
+          controllerAddress = PLSTR_CONTROLLER;
           setIsController(account.toLowerCase() === PLSTR_CONTROLLER.toLowerCase());
         } else {
           // Use _strategyController for xBOND and iBOND
-          const controller = await contract.methods._strategyController().call();
-          if (controller && web3.utils.isAddress(controller)) {
-            setIsController(controller.toLowerCase() === account.toLowerCase());
+          controllerAddress = await contract.methods._strategyController().call();
+          if (controllerAddress && web3.utils.isAddress(controllerAddress)) {
+            setIsController(controllerAddress.toLowerCase() === account.toLowerCase());
           } else {
-            console.warn("Invalid controller address returned:", controller);
+            console.warn("Invalid controller address returned:", controllerAddress);
             setIsController(false);
           }
         }
 
+        console.log("AdminPanel controller check:", {
+          contractSymbol,
+          account,
+          controllerAddress,
+          isController: account.toLowerCase() === controllerAddress.toLowerCase(),
+          appIsController,
+        });
+
         // Fetch vPLS balance for PLSTR
         if (contractSymbol === "PLSTR") {
-          const vPlsContract = new web3.eth.Contract(vPlsABI, tokenAddresses[369].vPLS);
+          const vPlsContract = new web3.eth.Contract(vPLS_ABI, tokenAddresses[369].vPLS);
           const balance = await vPlsContract.methods.balanceOf(account).call();
           setVPlsBalance(fromUnits(balance));
         }
@@ -75,8 +84,10 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol }) => {
         setError("Failed to load admin data");
       }
     };
-    if (web3 && contract && account) fetchData();
-  }, [contract, account, web3, contractSymbol]);
+    if (web3 && contract && account) {
+      fetchData();
+    }
+  }, [contract, account, web3, chainId, contractSymbol]);
 
   // Format input value with commas
   const formatInputValue = (value) => {
@@ -104,7 +115,7 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol }) => {
       if (!amount || Number(amount) <= 0) return "0";
       return web3.utils.toWei(amount, "ether");
     } catch (err) {
-      console.error("Error converting amount to token units:", { amount, err });
+      console.error("Error converting amount to token units:", { amount, error: err.message });
       return "0";
     }
   };
@@ -134,7 +145,7 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol }) => {
 
   const handleDepositTokens = async () => {
     if (contractSymbol !== "PLSTR") return;
-    if (account.toLowerCase() !== PLSTR_CONTROLLER.toLowerCase()) {
+    if (!isController) {
       setError("Only the strategy controller can deposit vPLS");
       return;
     }
@@ -147,7 +158,7 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol }) => {
     try {
       const tokenAmount = toTokenUnits(depositAmount);
       if (tokenAmount === "0") throw new Error("Invalid token amount");
-      const tokenContract = new web3.eth.Contract(vPlsABI, tokenAddresses[369].vPLS);
+      const tokenContract = new web3.eth.Contract(vPLS_ABI, tokenAddresses[369].vPLS);
       const allowance = await tokenContract.methods.allowance(account, contract.options.address).call();
       if (BigInt(allowance) < BigInt(tokenAmount)) {
         await tokenContract.methods.approve(contract.options.address, tokenAmount).send({ from: account });
@@ -201,7 +212,7 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol }) => {
           </button>
         </>
       )}
-      {isController && (
+      {isController ? (
         <>
           {contractSymbol !== "PLSTR" && (
             <>
@@ -225,7 +236,7 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol }) => {
               </button>
             </>
           )}
-          {contractSymbol === "PLSTR" && account.toLowerCase() === PLSTR_CONTROLLER.toLowerCase() && (
+          {contractSymbol === "PLSTR" && (
             <>
               <h3 className="text-lg font-medium mb-2">Deposit vPLS (Controller Only)</h3>
               <p className="text-gray-600 mb-2">
@@ -252,8 +263,7 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol }) => {
             </>
           )}
         </>
-      )}
-      {!isController && (
+      ) : (
         <p className="text-[#8B0000] mt-2">
           {contractSymbol === "PLSTR" ? "Controller-only actions restricted." : "Only the strategy controller can access admin functions."}
         </p>
