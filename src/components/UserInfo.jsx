@@ -67,20 +67,27 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
       } else {
         const result = await contract.methods.getClaimEligibility(account).call();
         console.log("getClaimEligibility raw result:", { result, type: typeof result, account, contractAddress: contract.options.address });
+        
         let claimablePLSTR, xBondBalance, iBondBalance;
         if (Array.isArray(result) && result.length === 5) {
           [claimablePLSTR, xBondBalance, iBondBalance, , ] = result;
-          console.log("getClaimEligibility parsed as tuple:", { claimablePLSTR, xBondBalance, iBondBalance });
+          console.log("getClaimEligibility parsed as array:", { claimablePLSTR, xBondBalance, iBondBalance });
+        } else if (typeof result === "object" && result !== null) {
+          claimablePLSTR = result.claimablePLSTR || result[0] || result;
+          xBondBalance = result.xBondBalance || result[1] || "0";
+          iBondBalance = result.iBondBalance || result[2] || "0";
+          console.log("getClaimEligibility parsed as object:", { claimablePLSTR, xBondBalance, iBondBalance });
         } else {
           console.warn("Unexpected getClaimEligibility result:", { result });
-          claimablePLSTR = typeof result === "object" && result.claimablePLSTR ? result.claimablePLSTR : result;
-          xBondBalance = typeof result === "object" && result.xBondBalance ? result.xBondBalance : "0";
-          iBondBalance = typeof result === "object" && result.iBondBalance ? result.iBondBalance : "0";
-          console.log("getClaimEligibility fallback parsed:", { claimablePLSTR, xBondBalance, iBondBalance });
+          claimablePLSTR = result;
+          xBondBalance = "0";
+          iBondBalance = "0";
         }
+
         if (isNaN(Number(claimablePLSTR)) || isNaN(Number(xBondBalance)) || isNaN(Number(iBondBalance))) {
-          throw new Error("Invalid number format in getClaimEligibility result");
+          throw new Error(`Invalid number format in getClaimEligibility: ${JSON.stringify({ claimablePLSTR, xBondBalance, iBondBalance })}`);
         }
+
         data.claimablePLSTR = fromUnits(claimablePLSTR);
         data.xBondBalance = fromUnits(xBondBalance);
         data.iBondBalance = fromUnits(iBondBalance);
@@ -142,17 +149,4 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
                 Claimable PLSTR: <span className="text-[#4B0082]">{formatNumber(userData.claimablePLSTR)} PLSTR</span>
               </p>
               <p className="text-gray-500">
-                xBOND Balance: <span className="text-[#4B0082]">{formatNumber(userData.xBondBalance)} xBOND</span>
-              </p>
-              <p className="text-gray-500">
-                iBOND Balance: <span className="text-[#4B0082]">{formatNumber(userData.iBondBalance)} iBOND</span>
-              </p>
-            </>
-          )}
-        </>
-      )}
-    </div>
-  );
-};
-
-export default UserInfo;
+                x
