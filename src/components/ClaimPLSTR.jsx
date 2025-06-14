@@ -14,29 +14,37 @@ const ClaimPLSTR = ({ contract, account, web3, chainId, contractSymbol }) => {
       return;
     }
     try {
-      const result = await contract.methods.getClaimEligibility(account).call();
-      console.log("getClaimEligibility raw result:", { result, type: typeof result, account, contractAddress: contract.options.address });
-      
       let claimablePLSTR, xBondBal, iBondBal;
-      if (Array.isArray(result) && result.length === 5) {
-        [claimablePLSTR, xBondBal, iBondBal, , ] = result;
-        console.log("getClaimEligibility parsed as array:", { claimablePLSTR, xBondBal, iBondBal });
-      } else if (typeof result === "object" && result !== null) {
-        // Handle object return (e.g., { "0": value, ... } or { claimablePLSTR: value, ... })
-        claimablePLSTR = result.claimablePLSTR || result[0] || result;
-        xBondBal = result.xBondBalance || result[1] || "0";
-        iBondBal = result.iBondBalance || result[2] || "0";
-        console.log("getClaimEligibility parsed as object:", { claimablePLSTR, xBondBal, iBondBal });
-      } else {
-        console.warn("Unexpected getClaimEligibility result, assuming single value:", { result });
-        claimablePLSTR = result;
-        xBondBal = "0";
-        iBondBal = "0";
+      
+      // Try getClaimEligibility first
+      try {
+        const result = await contract.methods.getClaimEligibility(account).call();
+        console.log("getClaimEligibility raw result:", { result, type: typeof result, account, contractAddress: contract.options.address });
+        
+        if (Array.isArray(result) && result.length === 5) {
+          [claimablePLSTR, xBondBal, iBondBal, , ] = result;
+          console.log("getClaimEligibility parsed as array:", { claimablePLSTR, xBondBal, iBondBal });
+        } else if (typeof result === "object" && result !== null) {
+          claimablePLSTR = result.claimablePLSTR || result[0] || "0";
+          xBondBal = result.xBondBalance || result[1] || "0";
+          iBondBal = result.iBondBalance || result[2] || "0";
+          console.log("getClaimEligibility parsed as object:", { claimablePLSTR, xBondBal, iBondBal });
+        } else {
+          throw new Error("Unexpected getClaimEligibility result format");
+        }
+      } catch (err) {
+        console.warn("getClaimEligibility failed, trying getPendingPLSTR as fallback:", err.message);
+        // Fallback to getPendingPLSTR for old contract
+        const xBondResult = await contract.methods.getPendingPLSTR(tokenAddresses[369].xBOND, account).call();
+        const iBondResult = await contract.methods.getPendingPLSTR(tokenAddresses[369].iBOND, account).call();
+        claimablePLSTR = (BigInt(xBondResult) + BigInt(iBondResult)).toString();
+        xBondBal = await new web3.eth.Contract(PLSTR_ABI, tokenAddresses[369].xBOND).methods.balanceOf(account).call();
+        iBondBal = await new web3.eth.Contract(PLSTR_ABI, tokenAddresses[369].iBOND).methods.balanceOf(account).call();
+        console.log("getPendingPLSTR fallback parsed:", { claimablePLSTR, xBondBal, iBondBal });
       }
 
-      // Validate numbers
       if (isNaN(Number(claimablePLSTR)) || isNaN(Number(xBondBal)) || isNaN(Number(iBondBal))) {
-        throw new Error(`Invalid number format in getClaimEligibility: ${JSON.stringify({ claimablePLSTR, xBondBal, iBondBal })}`);
+        throw new Error(`Invalid number format: ${JSON.stringify({ claimablePLSTR, xBondBal, iBondBal })}`);
       }
 
       setPendingPLSTR(web3.utils.fromWei(claimablePLSTR.toString(), "ether"));
@@ -67,7 +75,14 @@ const ClaimPLSTR = ({ contract, account, web3, chainId, contractSymbol }) => {
     setLoading(true);
     setError("");
     try {
-      await contract.methods.claimPLSTR().send({ from: account });
+      // Try claimPLSTR, fallback to claimAllPLSTR
+      try {
+        await contract.methods.claimPLSTR().send({ from: account });
+      } catch (err) {
+        console.warn("claimPLSTR failed, trying claimAllPLSTR:", err.message);
+        await contract.methods.claimAllPLSTR(tokenAddresses[369].xBOND).send({ from: account });
+        await contract.methods.claimAllPLSTR(tokenAddresses[369].iBOND).send({ from: account });
+      }
       alert(`Successfully claimed ${pendingPLSTR} PLSTR!`);
       setPendingPLSTR("0");
       await fetchPendingPLSTR();
