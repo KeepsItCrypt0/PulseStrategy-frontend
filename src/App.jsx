@@ -223,14 +223,16 @@ const App = () => {
                 contractSymbol={contractSymbol}
               />
             )}
-            <AdminPanel
-              contract={contract}
-              account={account}
-              web3={web3}
-              chainId={chainId}
-              contractSymbol={contractSymbol}
-              appIsController={isController}
-            />
+            {isController && (
+              <AdminPanel
+                contract={contract}
+                account={account}
+                web3={web3}
+                chainId={chainId}
+                contractSymbol={contractSymbol}
+                appIsController={isController}
+              />
+            )}
           </>
         )}
       </main>
