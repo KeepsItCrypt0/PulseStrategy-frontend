@@ -35,7 +35,6 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
       setLoading(true);
       setError("");
 
-      // Fetch contract balance
       const balance = await contract.methods.balanceOf(account).call();
       let data = {
         balance: fromUnits(balance),
@@ -48,7 +47,6 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
         iBondBalance: "0",
       };
 
-      // Fetch token balances for xBOND and iBOND
       const tokenAddrs = tokenAddresses[369];
       if (contractSymbol !== "PLSTR") {
         if (tokenAddrs.vPLS) {
@@ -66,12 +64,18 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
           const incBalance = await incContract.methods.balanceOf(account).call();
           data.incBalance = fromUnits(incBalance);
         }
-        // Note: redeemShares is nonpayable, so redeemableToken remains "0" unless a view function is provided
       } else {
-        // Fetch PLSTR-specific data
         const result = await contract.methods.getClaimEligibility(account).call();
         console.log("getClaimEligibility raw result:", { result, account, contractAddress: contract.options.address });
-        const [claimablePLSTR, xBondBalance, iBondBalance, , ] = result; // Skip last two values
+        let claimablePLSTR, xBondBalance, iBondBalance;
+        if (Array.isArray(result) && result.length === 5) {
+          [claimablePLSTR, xBondBalance, iBondBalance, , ] = result;
+        } else {
+          console.warn("Unexpected getClaimEligibility result, assuming single value:", result);
+          claimablePLSTR = result; // Fallback for single-value return
+          xBondBalance = "0";
+          iBondBalance = "0";
+        }
         console.log("getClaimEligibility parsed:", {
           claimablePLSTR,
           xBondBalance,
@@ -82,7 +86,6 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
         data.claimablePLSTR = fromUnits(claimablePLSTR);
         data.xBondBalance = fromUnits(xBondBalance);
         data.iBondBalance = fromUnits(iBondBalance);
-        // Placeholder for redeemable vPLS (requires a view function in PLSTR contract)
       }
 
       setUserData(data);
@@ -119,32 +122,32 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
         <p className="text-[#8B0000]">{error}</p>
       ) : (
         <>
-          <p className="text-gray-600">
+          <p className="text-gray-500">
             Balance: <span className="text-[#4B0082]">{formatNumber(userData.balance)} {contractSymbol}</span>
           </p>
           {contractSymbol !== "PLSTR" && (
             <>
-              <p className="text-gray-600">
+              <p className="text-gray-500">
                 vPLS Balance: <span className="text-[#4B0082]">{formatNumber(userData.vPlsBalance)} vPLS</span>
               </p>
-              <p className="text-gray-600">
+              <p className="text-gray-500">
                 PLSX Balance: <span className="text-[#4B0082]">{formatNumber(userData.plsxBalance)} PLSX</span>
               </p>
-              <p className="text-gray-600">
-                INC Balance: <span className="text-[#4B0082]">{formatNumber(userData.incBalance)} INC</span>
+              <p className="text-gray-500">
+                INC Balance: <span className="text-[#4B0082]">{formatNumber(userData.incBalance)}</span>
               </p>
             </>
           )}
           {contractSymbol === "PLSTR" && (
             <>
-              <p className="text-gray-600">
+              <p className="text-gray-500">
                 Claimable PLSTR: <span className="text-[#4B0082]">{formatNumber(userData.claimablePLSTR)} PLSTR</span>
               </p>
-              <p className="text-gray-600">
+              <p className="text-gray-500">
                 xBOND Balance: <span className="text-[#4B0082]">{formatNumber(userData.xBondBalance)} xBOND</span>
               </p>
-              <p className="text-gray-600">
-                iBOND Balance: <span className="text-[#4B0082]">{formatNumber(userData.iBondBalance)} iBOND</span>
+              <p className="text-gray-500">
+                iBOND Balance: <span className="text-[#4B0082]">{formatNumber(userData.iBondBalance)}</span>
               </p>
             </>
           )}
