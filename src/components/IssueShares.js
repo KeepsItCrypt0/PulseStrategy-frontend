@@ -10,7 +10,6 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol }) => {
   const [error, setError] = useState("");
 
   if (!web3 || !contract || !account || !chainId || !contractSymbol) {
-    console.warn("IssueShares: Missing required props", { web3, contract, account, chainId, contractSymbol });
     return <div className="text-gray-600 p-6">Loading contract data...</div>;
   }
 
@@ -27,16 +26,12 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol }) => {
   const defaultToken = tokens[0]?.symbol || "";
 
   if (!tokens.length) {
-    console.error("IssueShares: Invalid token config", { contractSymbol });
     return <div className="text-[#8B0000] p-6">Error: Invalid contract configuration</div>;
   }
 
   const toTokenUnits = (amount, decimals) => {
     try {
       if (!amount || Number(amount) <= 0) return "0";
-      if (decimals === 18) {
-        return web3.utils.toWei(amount, "ether");
-      }
       return web3.utils.toWei(amount, "ether");
     } catch (err) {
       console.error("Error converting amount to token units:", { amount, decimals, err });
@@ -67,7 +62,6 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol }) => {
   }, [contractSymbol, isPLSTR, defaultToken]);
 
   if (chainId !== 369) {
-    console.log("IssueShares: Invalid chainId", { chainId });
     return <div className="text-gray-600 p-6">Please connect to PulseChain</div>;
   }
 
@@ -93,7 +87,7 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol }) => {
         throw new Error(`Method ${issueMethod} not found in ${contractSymbol} contract`);
       }
       await contract.methods[issueMethod](tokenAmount).send({ from: account });
-      alert(`Successfully issued ${contractSymbol} shares with ${amount} ${token.symbol}!`);
+      alert(`Successfully issued ${contractSymbol} with ${amount} ${token.symbol}!`);
       setAmount("");
       setDisplayAmount("");
       if (isPLSTR) setSelectedToken("");
