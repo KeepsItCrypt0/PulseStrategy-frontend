@@ -77,7 +77,7 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol }) => {
     }
   };
 
-  const estimatedShares = amount ? (Number(amount) * 0.955).toFixed(6); // 4.5% fee
+  const estimatedShares = amount ? (Number(amount) * 0.955).toFixed(6): // 4.5% fee
   const feeAmount = amount ? (Number(amount) * 0.045).toFixed(6);
 
   return (
