@@ -100,7 +100,7 @@ const App = () => {
   return (
     <div className="min-h-screen gradient-bg flex flex-col items-center p-4">
       <header className="w-full max-w-4xl bg-white bg-opacity-90 shadow-lg rounded-lg p-6 mb-6 card">
-        <img src="/path-to-logo.png" alt="PulseStrategy Logo" className="mx-auto h-16 mb-4" />
+        <img src="/assets/logo.png" alt="PulseStrategy Logo" className="mx-auto h-16 mb-4" />
         <p className="text-center text-gray-600 mt-2">
           {account
             ? `Interact with the ${contractSymbol} contract on PulseChain`
