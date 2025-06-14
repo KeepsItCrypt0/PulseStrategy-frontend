@@ -66,23 +66,21 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
         }
       } else {
         const result = await contract.methods.getClaimEligibility(account).call();
-        console.log("getClaimEligibility raw result:", { result, account, contractAddress: contract.options.address });
+        console.log("getClaimEligibility raw result:", { result, type: typeof result, account, contractAddress: contract.options.address });
         let claimablePLSTR, xBondBalance, iBondBalance;
         if (Array.isArray(result) && result.length === 5) {
           [claimablePLSTR, xBondBalance, iBondBalance, , ] = result;
+          console.log("getClaimEligibility parsed as tuple:", { claimablePLSTR, xBondBalance, iBondBalance });
         } else {
-          console.warn("Unexpected getClaimEligibility result, assuming single value:", result);
-          claimablePLSTR = result; // Fallback for single-value return
-          xBondBalance = "0";
-          iBondBalance = "0";
+          console.warn("Unexpected getClaimEligibility result:", { result });
+          claimablePLSTR = typeof result === "object" && result.claimablePLSTR ? result.claimablePLSTR : result;
+          xBondBalance = typeof result === "object" && result.xBondBalance ? result.xBondBalance : "0";
+          iBondBalance = typeof result === "object" && result.iBondBalance ? result.iBondBalance : "0";
+          console.log("getClaimEligibility fallback parsed:", { claimablePLSTR, xBondBalance, iBondBalance });
         }
-        console.log("getClaimEligibility parsed:", {
-          claimablePLSTR,
-          xBondBalance,
-          iBondBalance,
-          account,
-          contractAddress: contract.options.address,
-        });
+        if (isNaN(Number(claimablePLSTR)) || isNaN(Number(xBondBalance)) || isNaN(Number(iBondBalance))) {
+          throw new Error("Invalid number format in getClaimEligibility result");
+        }
         data.claimablePLSTR = fromUnits(claimablePLSTR);
         data.xBondBalance = fromUnits(xBondBalance);
         data.iBondBalance = fromUnits(iBondBalance);
@@ -134,7 +132,7 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
                 PLSX Balance: <span className="text-[#4B0082]">{formatNumber(userData.plsxBalance)} PLSX</span>
               </p>
               <p className="text-gray-500">
-                INC Balance: <span className="text-[#4B0082]">{formatNumber(userData.incBalance)}</span>
+                INC Balance: <span className="text-[#4B0082]">{formatNumber(userData.incBalance)} INC</span>
               </p>
             </>
           )}
@@ -147,7 +145,7 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
                 xBOND Balance: <span className="text-[#4B0082]">{formatNumber(userData.xBondBalance)} xBOND</span>
               </p>
               <p className="text-gray-500">
-                iBOND Balance: <span className="text-[#4B0082]">{formatNumber(userData.iBondBalance)}</span>
+                iBOND Balance: <span className="text-[#4B0082]">{formatNumber(userData.iBondBalance)} iBOND</span>
               </p>
             </>
           )}
