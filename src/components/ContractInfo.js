@@ -11,17 +11,13 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
       totalMinted: "0",
       totalBurned: "0",
       iBondWeight: "0",
+      plsxBackingRatio: "0",
+      incBackingRatio: "0",
     },
     pairAddress: "",
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const tokenDecimals = {
-    vPLS: 18,
-    PLSX: 18,
-    INC: 18,
-  };
 
   const truncateAddress = (address) => {
     if (!address || typeof address !== "string" || address.length < 10) return "Not available";
@@ -32,16 +28,12 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
     return address === "0x0000000000000000000000000000000000000000";
   };
 
-  const fromUnits = (balance, decimals) => {
+  const fromUnits = (balance) => {
     try {
       if (!balance || balance === "0") return "0";
-      const balanceStr = typeof balance === "bigint" ? balance.toString() : balance.toString();
-      if (decimals === 18) {
-        return web3.utils.fromWei(balanceStr, "ether");
-      }
-      return web3.utils.fromWei(balanceStr, "ether");
+      return web3.utils.fromWei(balance.toString(), "ether");
     } catch (err) {
-      console.error("Error converting balance:", { balance, decimals, error: err.message });
+      console.error("Error converting balance:", { balance, error: err.message });
       return "0";
     }
   };
@@ -60,23 +52,24 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
       ]);
 
       const data = {
-        totalSupply: fromUnits(totalSupply, 18),
+        totalSupply: fromUnits(totalSupply),
         metrics: isPLSTR
           ? {
-              vPlsBalance: fromUnits(metrics[1], tokenDecimals.vPLS),
+              vPlsBalance: fromUnits(metrics[1]),
               plsxBalance: "0",
               incBalance: "0",
-              totalMinted: fromUnits(metrics[2], 18),
-              totalBurned: fromUnits(metrics[3], 18),
-              iBondWeight: fromUnits(metrics[6], 18),
+              totalMinted: fromUnits(metrics[2]),
+              totalBurned: fromUnits(metrics[3]),
+              iBondWeight: fromUnits(metrics[6]),
             }
           : {
               vPlsBalance: "0",
-              plsxBalance: contractSymbol === "xBOND" ? fromUnits(metrics[1], tokenDecimals.PLSX) : "0",
-              incBalance: contractSymbol === "iBOND" ? fromUnits(metrics[1], tokenDecimals.INC) : "0",
-              totalMinted: fromUnits(metrics[2], 18),
-              totalBurned: fromUnits(metrics[3], 18),
-              iBondWeight: "0",
+              plsxBalance: contractSymbol === "xBOND" ? fromUnits(metrics[1]) : "0",
+              incBalance: contractSymbol === "iBOND" ? fromUnits(metrics[1]) : "0",
+              totalMinted: fromUnits(metrics[2]),
+              totalBurned: fromUnits(metrics[3]),
+              plsxBackingRatio: contractSymbol === "xBOND" ? fromUnits(metrics[4]) : "0",
+              incBackingRatio: contractSymbol === "iBOND" ? fromUnits(metrics[4]) : "0",
             },
         pairAddress: pairAddress || "",
       };
@@ -127,6 +120,9 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
             <>
               <p className="text-gray-600">
                 {contractSymbol === "xBOND" ? "PLSX" : "INC"} Balance: <span className="text-[#4B0082]">{formatNumber(contractSymbol === "xBOND" ? contractData.metrics.plsxBalance : contractData.metrics.incBalance)} {contractSymbol === "xBOND" ? "PLSX" : "INC"}</span>
+              </p>
+              <p className="text-gray-600">
+                Backing Ratio: <span className="text-[#4B0082]">{formatNumber(contractSymbol === "xBOND" ? contractData.metrics.plsxBackingRatio : contractData.metrics.incBackingRatio)}</span>
               </p>
               {contractData.pairAddress && !isZeroAddress(contractData.pairAddress) && (
                 <p className="text-gray-600">
