@@ -5,10 +5,7 @@ import { tokenAddresses, vPLS_ABI, plsxABI, incABI } from "../web3";
 const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
   const [userData, setUserData] = useState({
     balance: "0",
-    redeemableValue: "0", // New field for redeemable value in vPLS
-    vPlsBalance: "0",
-    plsxBalance: "0",
-    incBalance: "0",
+    redeemableValue: "0", // vPLS for PLSTR, PLSX for xBOND, INC for iBOND
     claimablePLSTR: "0",
     xBondBalance: "0",
     iBondBalance: "0",
@@ -39,9 +36,6 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
       let data = {
         balance: fromUnits(balance),
         redeemableValue: "0",
-        vPlsBalance: "0",
-        plsxBalance: "0",
-        incBalance: "0",
         claimablePLSTR: "0",
         xBondBalance: "0",
         iBondBalance: "0",
@@ -49,48 +43,59 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
 
       const tokenAddrs = tokenAddresses[369];
 
-      // Fetch redeemable value for PLSTR
+      // Fetch redeemable value
+      let backingTokenBalance, totalSupply, redeemableTokenSymbol;
       if (contractSymbol === "PLSTR") {
         const metrics = await contract.methods.getContractMetrics().call();
-        console.log("getContractMetrics result:", { metrics });
+        console.log("getContractMetrics result for PLSTR:", { metrics });
         const { contractTotalSupply, vPlsBalance } = Array.isArray(metrics)
           ? { contractTotalSupply: metrics[0], vPlsBalance: metrics[1] }
-          : metrics; // Handle array or object return
-        if (Number(contractTotalSupply) > 0) {
-          // Redeemable value = (balance * vPlsBalance) / contractTotalSupply
-          const redeemable = (BigInt(balance) * BigInt(vPlsBalance)) / BigInt(contractTotalSupply);
-          data.redeemableValue = fromUnits(redeemable.toString());
+          : metrics;
+        totalSupply = contractTotalSupply;
+        backingTokenBalance = vPlsBalance;
+        redeemableTokenSymbol = "vPLS";
+      } else if (contractSymbol === "xBOND" && tokenAddrs.PLSX) {
+        try {
+          const metrics = await contract.methods.getContractMetrics().call();
+          console.log("getContractMetrics result for xBOND:", { metrics });
+          const { contractTotalSupply, plsxBalance } = Array.isArray(metrics)
+            ? { contractTotalSupply: metrics[0], plsxBalance: metrics[1] }
+            : metrics;
+          totalSupply = contractTotalSupply;
+          backingTokenBalance = plsxBalance;
+        } catch (err) {
+          console.warn("getContractMetrics failed for xBOND, using balanceOf:", err.message);
+          const plsxContract = new web3.eth.Contract(plsxABI, tokenAddrs.PLSX);
+          backingTokenBalance = await plsxContract.methods.balanceOf(tokenAddrs.xBOND).call();
+          totalSupply = await contract.methods.totalSupply().call();
         }
+        redeemableTokenSymbol = "PLSX";
+      } else if (contractSymbol === "iBOND" && tokenAddrs.INC) {
+        try {
+          const metrics = await contract.methods.getContractMetrics().call();
+          console.log("getContractMetrics result for iBOND:", { metrics });
+          const { contractTotalSupply, incBalance } = Array.isArray(metrics)
+            ? { contractTotalSupply: metrics[0], incBalance: metrics[1] }
+            : metrics;
+          totalSupply = contractTotalSupply;
+          backingTokenBalance = incBalance;
+        } catch (err) {
+          console.warn("getContractMetrics failed for iBOND, using balanceOf:", err.message);
+          const incContract = new web3.eth.Contract(incABI, tokenAddrs.INC);
+          backingTokenBalance = await incContract.methods.balanceOf(tokenAddrs.iBOND).call();
+          totalSupply = await contract.methods.totalSupply().call();
+        }
+        redeemableTokenSymbol = "INC";
       }
 
-      // Fetch token balances based on contractSymbol
-      if (contractSymbol === "xBOND" && tokenAddrs.PLSX) {
-        const plsxContract = new web3.eth.Contract(plsxABI, tokenAddrs.PLSX);
-        const plsxBalance = await plsxContract.methods.balanceOf(account).call();
-        data.plsxBalance = fromUnits(plsxBalance);
-      } else if (contractSymbol === "iBOND" && tokenAddrs.INC) {
-        const incContract = new web3.eth.Contract(incABI, tokenAddrs.INC);
-        const incBalance = await incContract.methods.balanceOf(account).call();
-        data.incBalance = fromUnits(incBalance);
-      } else if (contractSymbol === "PLSTR") {
-        // Fetch vPLS, PLSX, INC for PLSTR
-        if (tokenAddrs.vPLS) {
-          const vPlsContract = new web3.eth.Contract(vPLS_ABI, tokenAddrs.vPLS);
-          const vPlsBalance = await vPlsContract.methods.balanceOf(account).call();
-          data.vPlsBalance = fromUnits(vPlsBalance);
-        }
-        if (tokenAddrs.PLSX) {
-          const plsxContract = new web3.eth.Contract(plsxABI, tokenAddrs.PLSX);
-          const plsxBalance = await plsxContract.methods.balanceOf(account).call();
-          data.plsxBalance = fromUnits(plsxBalance);
-        }
-        if (tokenAddrs.INC) {
-          const incContract = new web3.eth.Contract(incABI, tokenAddrs.INC);
-          const incBalance = await incContract.methods.balanceOf(account).call();
-          data.incBalance = fromUnits(incBalance);
-        }
+      if (Number(totalSupply) > 0) {
+        // Redeemable value = (balance * backingTokenBalance) / totalSupply
+        const redeemable = (BigInt(balance) * BigInt(backingTokenBalance)) / BigInt(totalSupply);
+        data.redeemableValue = fromUnits(redeemable.toString());
+      }
 
-        // Fetch claim eligibility
+      // Fetch PLSTR-specific data
+      if (contractSymbol === "PLSTR") {
         let claimablePLSTR, xBondBalance, iBondBalance;
         try {
           const result = await contract.methods.getClaimEligibility(account).call();
@@ -112,8 +117,10 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
           const xBondResult = await contract.methods.getPendingPLSTR(tokenAddrs.xBOND, account).call();
           const iBondResult = await contract.methods.getPendingPLSTR(tokenAddrs.iBOND, account).call();
           claimablePLSTR = (BigInt(xBondResult) + BigInt(iBondResult)).toString();
-          xBondBalance = await new web3.eth.Contract(plsxABI, tokenAddrs.xBOND).methods.balanceOf(account).call();
-          iBondBalance = await new web3.eth.Contract(incABI, tokenAddrs.iBOND).methods.balanceOf(account).call();
+          const xBondContract = new web3.eth.Contract(plsxABI, tokenAddrs.xBOND);
+          const iBondContract = new web3.eth.Contract(incABI, tokenAddrs.iBOND);
+          xBondBalance = await xBondContract.methods.balanceOf(account).call();
+          iBondBalance = await iBondContract.methods.balanceOf(account).call();
           console.log("getPendingPLSTR fallback parsed:", { claimablePLSTR, xBondBalance, iBondBalance });
         }
 
@@ -126,7 +133,7 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
         data.iBondBalance = fromUnits(iBondBalance);
       }
 
-      setUserData(data);
+      setUserData({ ...data, redeemableTokenSymbol });
     } catch (err) {
       setError(`Failed to load user data: ${err.message}`);
       console.error("Fetch user data error:", {
@@ -163,30 +170,11 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
           <p className="text-gray-500">
             Balance: <span className="text-[#4B0082]">{formatNumber(userData.balance)} {contractSymbol}</span>
           </p>
-          {contractSymbol === "xBOND" && (
-            <p className="text-gray-500">
-              PLSX Balance: <span className="text-[#4B0082]">{formatNumber(userData.plsxBalance)} PLSX</span>
-            </p>
-          )}
-          {contractSymbol === "iBOND" && (
-            <p className="text-gray-500">
-              INC Balance: <span className="text-[#4B0082]">{formatNumber(userData.incBalance)} INC</span>
-            </p>
-          )}
+          <p className="text-gray-500">
+            Redeemable Value: <span className="text-[#4B0082]">{formatNumber(userData.redeemableValue)} {userData.redeemableTokenSymbol}</span>
+          </p>
           {contractSymbol === "PLSTR" && (
             <>
-              <p className="text-gray-500">
-                Redeemable Value: <span className="text-[#4B0082]">{formatNumber(userData.redeemableValue)} vPLS</span>
-              </p>
-              <p className="text-gray-500">
-                vPLS Balance: <span className="text-[#4B0082]">{formatNumber(userData.vPlsBalance)} vPLS</span>
-              </p>
-              <p className="text-gray-500">
-                PLSX Balance: <span className="text-[#4B0082]">{formatNumber(userData.plsxBalance)} PLSX</span>
-              </p>
-              <p className="text-gray-500">
-                INC Balance: <span className="text-[#4B0082]">{formatNumber(userData.incBalance)} INC</span>
-              </p>
               <p className="text-gray-500">
                 Claimable PLSTR: <span className="text-[#4B0082]">{formatNumber(userData.claimablePLSTR)} PLSTR</span>
               </p>
