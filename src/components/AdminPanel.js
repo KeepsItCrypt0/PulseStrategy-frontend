@@ -6,12 +6,10 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol }) => {
   const [error, setError] = useState("");
 
   if (!web3 || !contract || !account || !chainId || !contractSymbol) {
-    console.warn("AdminPanel: Missing required props", { web3, contract, account, chainId, contractSymbol });
     return <div className="text-gray-600 p-6">Loading contract data...</div>;
   }
 
   if (chainId !== 369) {
-    console.log("AdminPanel: Invalid chainId", { chainId });
     return <div className="text-gray-600 p-6">Please connect to PulseChain</div>;
   }
 
