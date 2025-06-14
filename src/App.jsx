@@ -28,7 +28,7 @@ const App = () => {
     iBOND: iBOND_ABI,
   };
 
-  const PLSTR_CONTROLLER = "0x6aaE8556C69b795b561CB75ca83aF6187d2F0AF5";
+  const CONTROLLER_ADDRESS = "0x6aaE8556C69b795b561CB75ca83aF6187d2F0AF5"; // Same for PLSTR, xBOND, iBOND
 
   const initializeApp = async () => {
     setLoading(true);
@@ -65,36 +65,16 @@ const App = () => {
       const contractInstance = new web3Instance.eth.Contract(contractABI, contractAddress);
       setContract(contractInstance);
 
-      // Check if the user is the strategy controller
-      try {
-        let controllerAddress;
-        if (contractSymbol === "PLSTR") {
-          controllerAddress = PLSTR_CONTROLLER;
-          setIsController(account.toLowerCase() === PLSTR_CONTROLLER.toLowerCase());
-        } else {
-          controllerAddress = await contractInstance.methods._strategyController().call();
-          setIsController(
-            controllerAddress &&
-              web3Instance.utils.isAddress(controllerAddress) &&
-              controllerAddress.toLowerCase() === account.toLowerCase()
-          );
-        }
-        console.log("App controller check:", {
-          account,
-          controllerAddress,
-          isController: account.toLowerCase() === controllerAddress.toLowerCase(),
-          chainId,
-          contractAddress,
-          contractSymbol,
-        });
-      } catch (err) {
-        console.error("Error checking strategy controller:", {
-          error: err.message,
-          contractAddress,
-          contractSymbol,
-        });
-        setIsController(false);
-      }
+      // Check if the user is the controller
+      setIsController(account.toLowerCase() === CONTROLLER_ADDRESS.toLowerCase());
+      console.log("App controller check:", {
+        account,
+        controllerAddress: CONTROLLER_ADDRESS,
+        isController: account.toLowerCase() === CONTROLLER_ADDRESS.toLowerCase(),
+        chainId,
+        contractAddress,
+        contractSymbol,
+      });
 
       console.log("App initialized:", {
         chainId,
