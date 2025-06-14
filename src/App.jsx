@@ -4,7 +4,7 @@ import ContractInfo from "./components/ContractInfo";
 import UserInfo from "./components/UserInfo";
 import IssueShares from "./components/IssueShares";
 import RedeemShares from "./components/RedeemShares";
-import Burn from "./components/Burn";
+import SwapBurn from "./components/SwapBurn";
 import ClaimPLSTR from "./components/ClaimPLSTR";
 import AdminPanel from "./components/AdminPanel";
 import { getWeb3, getAccount, getContract, contractAddresses } from "./web3";
