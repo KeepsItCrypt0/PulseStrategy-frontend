@@ -37,7 +37,7 @@ const SwapBurn = ({ web3, contract, account, chainId, contractSymbol }) => {
     setLoading(true);
     setError("");
     try {
-      const burnFunction = contractSymbol === "xBOND" ? "burnContractXBond" : "burnContractIBond";
+      const burnFunction = contractSymbol === "xBond" ? "burnContractXBond" : "burnContractIBond";
       await contract.methods[burnFunction]().send({ from: account });
       alert(`Burned accumulated ${contractSymbol} successfully!`);
       fetchAccumulatedBalance();
