@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { formatNumber } from "../utils/format";
 
-const WeightUpdate = ({ contract, account, web3, chainId }) => {
+const WeightUpdate = ({ contract, account, web3, chainId, onTransactionSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [weightData, setWeightData] = useState({
@@ -77,6 +77,9 @@ const WeightUpdate = ({ contract, account, web3, chainId }) => {
       alert("iBond weight updated successfully!");
       // Refresh data
       await fetchWeightData();
+      if (onTransactionSuccess) {
+        onTransactionSuccess();
+      }
     } catch (err) {
       const errorMessage = err.message.includes("WeightUpdateTooSoon")
         ? "Weight update too soon; please wait 24 hours since the last update"
