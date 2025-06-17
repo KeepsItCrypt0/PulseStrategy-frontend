@@ -49,7 +49,7 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
         contract.methods.getContractMetrics().call(),
       ];
 
-      // Fetch issuance status only for xBOND and iBOND
+      // Fetch issuance status only for xBond and iBond
       if (!isPLSTR) {
         promises.push(contract.methods.getIssuanceStatus().call());
       }
@@ -69,12 +69,12 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
             }
           : {
               vPlsBalance: "0",
-              plsxBalance: contractSymbol === "xBOND" ? fromUnits(metrics[1]) : "0",
-              incBalance: contractSymbol === "iBOND" ? fromUnits(metrics[1]) : "0",
+              plsxBalance: contractSymbol === "xBond" ? fromUnits(metrics[1]) : "0",
+              incBalance: contractSymbol === "iBond" ? fromUnits(metrics[1]) : "0",
               totalMinted: fromUnits(metrics[2]),
               totalBurned: fromUnits(metrics[3]),
-              plsxBackingRatio: contractSymbol === "xBOND" ? fromUnits(metrics[4]) : "0",
-              incBackingRatio: contractSymbol === "iBOND" ? fromUnits(metrics[4]) : "0",
+              plsxBackingRatio: contractSymbol === "xBond" ? fromUnits(metrics[4]) : "0",
+              incBackingRatio: contractSymbol === "iBond" ? fromUnits(metrics[4]) : "0",
             },
         issuanceStatus: isPLSTR
           ? { isActive: false, timeRemaining: 0 }
@@ -139,16 +139,16 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
           {contractSymbol !== "PLSTR" && (
             <>
               <p className="text-gray-600">
-                {contractSymbol === "xBOND" ? "PLSX" : "INC"} Balance:{" "}
+                {contractSymbol === "xBond" ? "PLSX" : "INC"} Balance:{" "}
                 <span className="text-[#4B0082]">
-                  {formatNumber(contractSymbol === "xBOND" ? contractData.metrics.plsxBalance : contractData.metrics.incBalance)}{" "}
-                  {contractSymbol === "xBOND" ? "PLSX" : "INC"}
+                  {formatNumber(contractSymbol === "xBond" ? contractData.metrics.plsxBalance : contractData.metrics.incBalance)}{" "}
+                  {contractSymbol === "xBond" ? "PLSX" : "INC"}
                 </span>
               </p>
               <p className="text-gray-600">
                 Backing Ratio:{" "}
                 <span className="text-[#4B0082]">
-                  {formatNumber(contractSymbol === "xBOND" ? contractData.metrics.plsxBackingRatio : contractData.metrics.incBackingRatio)}
+                  {formatNumber(contractSymbol === "xBond" ? contractData.metrics.plsxBackingRatio : contractData.metrics.incBackingRatio)}
                 </span>
               </p>
               <p className="text-gray-600">
