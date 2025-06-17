@@ -16,8 +16,8 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol }) => {
   }
 
   const tokenConfig = {
-    xBOND: [{ symbol: "PLSX", address: tokenAddresses[369].PLSX, decimals: 18, abi: plsxABI }],
-    iBOND: [{ symbol: "INC", address: tokenAddresses[369].INC, decimals: 18, abi: incABI }],
+    xBond: [{ symbol: "PLSX", address: tokenAddresses[369].PLSX, decimals: 18, abi: plsxABI }],
+    iBond: [{ symbol: "INC", address: tokenAddresses[369].INC, decimals: 18, abi: incABI }],
   };
 
   const tokens = tokenConfig[contractSymbol] || [];
