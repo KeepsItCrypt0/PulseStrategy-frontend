@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { formatNumber } from "../utils/format";
 
-const SwapBurn = ({ web3, contract, account, chainId, contractSymbol }) => {
+const SwapBurn = ({ web3, contract, account, chainId, contractSymbol, onTransactionSuccess }) => {
   const [accumulatedBalance, setAccumulatedBalance] = useState("0");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -41,6 +41,9 @@ const SwapBurn = ({ web3, contract, account, chainId, contractSymbol }) => {
       await contract.methods[burnFunction]().send({ from: account });
       alert(`Burned accumulated ${contractSymbol} successfully!`);
       fetchAccumulatedBalance();
+      if (onTransactionSuccess) {
+        onTransactionSuccess();
+      }
     } catch (err) {
       setError(`Error burning tokens: ${err.message}`);
       console.error("Burn error:", err);
