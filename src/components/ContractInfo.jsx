@@ -11,10 +11,11 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
       totalMinted: "0",
       totalBurned: "0",
       avgPlstrPerBond: "0",
+      vPlsBackingRatio: "0", // Added for PLSTR
       plsxBackingRatio: "0",
       incBackingRatio: "0",
     },
-    issuanceStatus: { isActive: false, timeRemaining: 0 }, // Added
+    issuanceStatus: { isActive: false, timeRemaining: 0 },
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -29,7 +30,6 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
     }
   };
 
-  // Format time remaining (seconds) to days/hours
   const formatTimeRemaining = (seconds) => {
     if (seconds <= 0) return "0";
     const days = Math.floor(seconds / 86400);
@@ -49,7 +49,6 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
         contract.methods.getContractMetrics().call(),
       ];
 
-      // Fetch issuance status only for xBond and iBond
       if (!isPLSTR) {
         promises.push(contract.methods.getIssuanceStatus().call());
       }
@@ -66,6 +65,9 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
               totalMinted: fromUnits(metrics[2]),
               totalBurned: fromUnits(metrics[3]),
               avgPlstrPerBond: fromUnits(metrics[6]),
+              vPlsBackingRatio: fromUnits(metrics[7]), // Added for PLSTR
+              plsxBackingRatio: "0",
+              incBackingRatio: "0",
             }
           : {
               vPlsBalance: "0",
@@ -75,6 +77,7 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
               totalBurned: fromUnits(metrics[3]),
               plsxBackingRatio: contractSymbol === "xBond" ? fromUnits(metrics[4]) : "0",
               incBackingRatio: contractSymbol === "iBond" ? fromUnits(metrics[4]) : "0",
+              vPlsBackingRatio: "0",
             },
         issuanceStatus: isPLSTR
           ? { isActive: false, timeRemaining: 0 }
@@ -133,6 +136,9 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
               </p>
               <p className="text-gray-600">
                 Avg PLSTR per Bond: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.avgPlstrPerBond)}</span>
+              </p>
+              <p className="text-gray-600">
+                vPLS Backing Ratio: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.vPlsBackingRatio)}</span>
               </p>
             </>
           )}
