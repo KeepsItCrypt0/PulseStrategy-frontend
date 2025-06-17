@@ -5,7 +5,7 @@ import { tokenAddresses, vPLS_ABI, plsxABI, incABI } from "../web3";
 const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
   const [userData, setUserData] = useState({
     balance: "0",
-    redeemableValue: "0", // vPLS for PLSTR, PLSX for xBOND, INC for iBOND
+    redeemableValue: "0",
     claimablePLSTR: "0",
     xBondBalance: "0",
     iBondBalance: "0",
@@ -54,35 +54,35 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
         totalSupply = contractTotalSupply;
         backingTokenBalance = vPlsBalance;
         redeemableTokenSymbol = "vPLS";
-      } else if (contractSymbol === "xBOND" && tokenAddrs.PLSX) {
+      } else if (contractSymbol === "xBond" && tokenAddrs.PLSX) {
         try {
           const metrics = await contract.methods.getContractMetrics().call();
-          console.log("getContractMetrics result for xBOND:", { metrics });
+          console.log("getContractMetrics result for xBond:", { metrics });
           const { contractTotalSupply, plsxBalance } = Array.isArray(metrics)
             ? { contractTotalSupply: metrics[0], plsxBalance: metrics[1] }
             : metrics;
           totalSupply = contractTotalSupply;
           backingTokenBalance = plsxBalance;
         } catch (err) {
-          console.warn("getContractMetrics failed for xBOND, using balanceOf:", err.message);
+          console.warn("getContractMetrics failed for xBond, using balanceOf:", err.message);
           const plsxContract = new web3.eth.Contract(plsxABI, tokenAddrs.PLSX);
-          backingTokenBalance = await plsxContract.methods.balanceOf(tokenAddrs.xBOND).call();
+          backingTokenBalance = await plsxContract.methods.balanceOf(tokenAddrs.xBond).call();
           totalSupply = await contract.methods.totalSupply().call();
         }
         redeemableTokenSymbol = "PLSX";
-      } else if (contractSymbol === "iBOND" && tokenAddrs.INC) {
+      } else if (contractSymbol === "iBond" && tokenAddrs.INC) {
         try {
           const metrics = await contract.methods.getContractMetrics().call();
-          console.log("getContractMetrics result for iBOND:", { metrics });
+          console.log("getContractMetrics result for iBond:", { metrics });
           const { contractTotalSupply, incBalance } = Array.isArray(metrics)
             ? { contractTotalSupply: metrics[0], incBalance: metrics[1] }
             : metrics;
           totalSupply = contractTotalSupply;
           backingTokenBalance = incBalance;
         } catch (err) {
-          console.warn("getContractMetrics failed for iBOND, using balanceOf:", err.message);
+          console.warn("getContractMetrics failed for iBond, using balanceOf:", err.message);
           const incContract = new web3.eth.Contract(incABI, tokenAddrs.INC);
-          backingTokenBalance = await incContract.methods.balanceOf(tokenAddrs.iBOND).call();
+          backingTokenBalance = await incContract.methods.balanceOf(tokenAddrs.iBond).call();
           totalSupply = await contract.methods.totalSupply().call();
         }
         redeemableTokenSymbol = "INC";
@@ -114,8 +114,8 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
           }
         } catch (err) {
           console.warn("getClaimEligibility failed, trying getPendingPLSTR:", err.message);
-          const xBondResult = await contract.methods.getPendingPLSTR(tokenAddrs.xBOND, account).call();
-          const iBondResult = await contract.methods.getPendingPLSTR(tokenAddrs.iBOND, account).call();
+          const xBondResult = await contract.methods.getPendingPLSTR(tokenAddrs.xBond, account).call();
+          const iBondResult = await contract.methods.getPendingPLSTR(tokenAddrs.iBond, account).call();
           claimablePLSTR = (BigInt(xBondResult) + BigInt(iBondResult)).toString();
           const xBondContract = new web3.eth.Contract(plsxABI, tokenAddrs.xBOND);
           const iBondContract = new web3.eth.Contract(incABI, tokenAddrs.iBOND);
@@ -179,10 +179,10 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
                 Claimable PLSTR: <span className="text-[#4B0082]">{formatNumber(userData.claimablePLSTR)} PLSTR</span>
               </p>
               <p className="text-gray-500">
-                xBOND Balance: <span className="text-[#4B0082]">{formatNumber(userData.xBondBalance)} xBOND</span>
+                xBond Balance: <span className="text-[#4B0082]">{formatNumber(userData.xBondBalance)} xBond</span>
               </p>
               <p className="text-gray-500">
-                iBOND Balance: <span className="text-[#4B0082]">{formatNumber(userData.iBondBalance)} iBOND</span>
+                iBond Balance: <span className="text-[#4B0082]">{formatNumber(userData.iBondBalance)} iBond</span>
               </p>
             </>
           )}
