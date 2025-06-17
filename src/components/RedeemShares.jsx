@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { formatNumber } from "../utils/format";
 import { tokenAddresses } from "../web3";
 
-const RedeemShares = ({ contract, account, web3, chainId, contractSymbol }) => {
+const RedeemShares = ({ contract, account, web3, chainId, contractSymbol, onTransactionSuccess }) => {
   const [amount, setAmount] = useState("");
   const [displayAmount, setDisplayAmount] = useState("");
   const [redeemableAssets, setRedeemableAssets] = useState({
@@ -133,6 +133,9 @@ const RedeemShares = ({ contract, account, web3, chainId, contractSymbol }) => {
       setDisplayAmount("");
       setRedeemableAssets({ vPls: "0", plsx: "0", inc: "0" });
       fetchUserData();
+      if (onTransactionSuccess) {
+        onTransactionSuccess();
+      }
     } catch (err) {
       setError(`Error redeeming shares: ${err.message}`);
       console.error("Redeem shares error:", err);
