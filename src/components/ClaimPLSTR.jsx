@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { formatNumber } from "../utils/format";
 
-const ClaimPLSTR = ({ contract, account, web3, chainId, contractSymbol }) => {
+const ClaimPLSTR = ({ contract, account, web3, chainId, contractSymbol, onTransactionSuccess }) => {
   const [pendingPLSTR, setPendingPLSTR] = useState("0");
   const [xBondBalance, setXBondBalance] = useState("0");
   const [iBondBalance, setIBondBalance] = useState("0");
@@ -58,8 +58,8 @@ const ClaimPLSTR = ({ contract, account, web3, chainId, contractSymbol }) => {
       });
       setError(`Failed to load claimable PLSTR: ${err.message}`);
       setPendingPLSTR("0");
-      setxBondBalance("0");
-      setiBondBalance("0");
+      setXBondBalance("0");
+      setIBondBalance("0");
     }
   };
 
@@ -86,6 +86,9 @@ const ClaimPLSTR = ({ contract, account, web3, chainId, contractSymbol }) => {
       alert(`Successfully claimed ${pendingPLSTR} PLSTR!`);
       setPendingPLSTR("0");
       await fetchPendingPLSTR();
+      if (onTransactionSuccess) {
+        onTransactionSuccess();
+      }
       console.log("PLSTR claimed:", { account, contractAddress: contract.options.address });
     } catch (err) {
       console.error("Error claiming PLSTR:", {
