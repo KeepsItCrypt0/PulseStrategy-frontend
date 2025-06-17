@@ -3,9 +3,9 @@ import Web3 from "web3";
 // Contract addresses
 export const contractAddresses = {
   369: {
-    iBOND: "0xeD21E067dDBCd189AcB7c43302fB0Dc3b7bF59E0",
-    xBOND: "0x887C5ABAAAC2161E9A742f600B16d5b00850b63b",
-    PLSTR: "0xCc5EDB7c828fCe820f3b4571951a96029a45F663",
+    iBond: "0x791afBffAb3DC293786827e2F4588aabd52a9270",
+    xBond: "0x252662c2d71fD5cF8FCE5B58CA1F95D3C9c00C2c",
+    PLSTR: "0x557DDecea197cCb2c5998Eb94CF17f707C2522AE",
   },
 };
 
@@ -18,7 +18,7 @@ export const tokenAddresses = {
   },
 };
 
-// Token ABIs (placeholders)
+// Token ABIs
 export const vPLS_ABI = [
     {
         "inputs": [
@@ -2058,7 +2058,7 @@ export const plsxABI = [
         "type": "event"
     }
 ];
-export const iBOND_ABI = [
+export const iBond_ABI = [
 	{
 		"inputs": [],
 		"stateMutability": "nonpayable",
@@ -2163,11 +2163,6 @@ export const iBOND_ABI = [
 	{
 		"inputs": [],
 		"name": "InsufficientContractBalance",
-		"type": "error"
-	},
-	{
-		"inputs": [],
-		"name": "InsufficientLiquidity",
 		"type": "error"
 	},
 	{
@@ -2444,7 +2439,7 @@ export const iBOND_ABI = [
 	},
 	{
 		"inputs": [],
-		"name": "burnContractIBond",
+		"name": "burnContractiBond",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -2645,7 +2640,7 @@ export const iBOND_ABI = [
 		"type": "function"
 	}
 ];
-export const xBOND_ABI = [
+export const xBond_ABI = [
 	{
 		"inputs": [],
 		"stateMutability": "nonpayable",
@@ -2750,11 +2745,6 @@ export const xBOND_ABI = [
 	{
 		"inputs": [],
 		"name": "InsufficientContractBalance",
-		"type": "error"
-	},
-	{
-		"inputs": [],
-		"name": "InsufficientLiquidity",
 		"type": "error"
 	},
 	{
@@ -3031,7 +3021,7 @@ export const xBOND_ABI = [
 	},
 	{
 		"inputs": [],
-		"name": "burnContractXBond",
+		"name": "burnContractxBond",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -3326,6 +3316,11 @@ export const PLSTR_ABI = [
 	},
 	{
 		"inputs": [],
+		"name": "InsufficientAllowance",
+		"type": "error"
+	},
+	{
+		"inputs": [],
 		"name": "InsufficientBalance",
 		"type": "error"
 	},
@@ -3342,11 +3337,6 @@ export const PLSTR_ABI = [
 	{
 		"inputs": [],
 		"name": "NoEligibleTokens",
-		"type": "error"
-	},
-	{
-		"inputs": [],
-		"name": "NoNewDeposits",
 		"type": "error"
 	},
 	{
@@ -3368,6 +3358,11 @@ export const PLSTR_ABI = [
 	{
 		"inputs": [],
 		"name": "ZeroAddress",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "ZeroTokenSupply",
 		"type": "error"
 	},
 	{
@@ -3704,6 +3699,11 @@ export const PLSTR_ABI = [
 				"internalType": "uint256",
 				"name": "avgPlstrPerBond",
 				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "backingRatio",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -3848,14 +3848,13 @@ export const PLSTR_ABI = [
 		"type": "function"
 	}
 ];
-
 export const networkConfigs = {
   369: {
     chainId: "0x171",
     chainName: "PulseChain",
-    rpcUrls: ["https://pulsechain-rpc.publicnode.com"],
+    rpcUrls: ["https://rpc.pulsechain.com"],
     nativeCurrency: { name: "Pulse", symbol: "PLS", decimals: 18 },
-    blockExplorerUrls: ["https://otter.pulsechain.com"],
+    blockExplorerUrls: ["https://midgard.wtf/"],
   },
 };
 
@@ -3886,7 +3885,7 @@ export const getWeb3 = async () => {
   }
 };
 
-export const getContract = async (web3, contractSymbol = "xBOND") => {
+export const getContract = async (web3, contractSymbol = "xBond") => {
   if (!web3) {
     console.error("Web3 is not initialized");
     return null;
@@ -3903,10 +3902,10 @@ export const getContract = async (web3, contractSymbol = "xBOND") => {
       return null;
     }
     const abi =
-      contractSymbol === "iBOND"
-        ? iBOND_ABI
-        : contractSymbol === "xBOND"
-        ? xBOND_ABI
+      contractSymbol === "iBond"
+        ? iBond_ABI
+        : contractSymbol === "xBond"
+        ? xBond_ABI
         : PLSTR_ABI;
     const contract = new web3.eth.Contract(abi, contractAddress);
     console.log("Contract initialized:", {
