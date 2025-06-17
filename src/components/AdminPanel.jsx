@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { tokenAddresses, vPLS_ABI } from "../web3";
 import { formatNumber } from "../utils/format";
 
-const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsController }) => {
+const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsController, onTransactionSuccess }) => {
   const [pairAddress, setPairAddress] = useState("");
   const [depositAmount, setDepositAmount] = useState("");
   const [displayDepositAmount, setDisplayDepositAmount] = useState("");
@@ -112,6 +112,9 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsCon
       await contract.methods.setPairAddress(pairAddress).send({ from: account });
       alert("Pair address set successfully!");
       setPairAddress("");
+      if (onTransactionSuccess) {
+        onTransactionSuccess();
+      }
     } catch (err) {
       setError(`Error setting pair address: ${err.message}`);
       console.error("Set pair address error:", err);
@@ -142,6 +145,9 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsCon
       setDisplayDepositAmount("");
       const balance = await tokenContract.methods.balanceOf(account).call();
       setVPlsBalance(fromUnits(balance));
+      if (onTransactionSuccess) {
+        onTransactionSuccess();
+      }
     } catch (err) {
       setError(`Error depositing vPLS: ${err.message}`);
       console.error("Deposit tokens error:", err);
