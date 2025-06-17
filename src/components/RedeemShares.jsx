@@ -21,8 +21,8 @@ const RedeemShares = ({ contract, account, web3, chainId, contractSymbol }) => {
   };
 
   const tokenConfig = {
-    xBOND: { symbol: "PLSX", address: tokenAddresses[369].PLSX, redeemMethod: "redeemShares" },
-    iBOND: { symbol: "INC", address: tokenAddresses[369].INC, redeemMethod: "redeemShares" },
+    xBond: { symbol: "PLSX", address: tokenAddresses[369].PLSX, redeemMethod: "redeemShares" },
+    iBond: { symbol: "INC", address: tokenAddresses[369].INC, redeemMethod: "redeemShares" },
     PLSTR: { symbol: "vPLS", address: tokenAddresses[369].vPLS, redeemMethod: "redeemPLSTR" },
   };
 
@@ -98,8 +98,8 @@ const RedeemShares = ({ contract, account, web3, chainId, contractSymbol }) => {
 
       setRedeemableAssets({
         vPls: isPLSTR ? fromUnits(redeemableAmount, tokenDecimals.vPLS) : "0",
-        plsx: contractSymbol === "xBOND" ? fromUnits(redeemableAmount, tokenDecimals.PLSX) : "0",
-        inc: contractSymbol === "iBOND" ? fromUnits(redeemableAmount, tokenDecimals.INC) : "0",
+        plsx: contractSymbol === "xBond" ? fromUnits(redeemableAmount, tokenDecimals.PLSX) : "0",
+        inc: contractSymbol === "iBond" ? fromUnits(redeemableAmount, tokenDecimals.INC) : "0",
       });
     } catch (err) {
       setError(`Failed to load redeemable assets: ${err.message}`);
