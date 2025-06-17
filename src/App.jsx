@@ -13,11 +13,15 @@ import { PLSTR_ABI, xBond_ABI, iBond_ABI } from "./web3";
 import "./index.css";
 
 const App = () => {
+  // Initialize contractSymbol from localStorage, default to "xBond"
   const [web3, setWeb3] = useState(null);
   const [account, setAccount] = useState(null);
   const [chainId, setChainId] = useState(null);
   const [contract, setContract] = useState(null);
-  const [contractSymbol, setContractSymbol] = useState("xBond");
+  const [contractSymbol, setContractSymbol] = useState(() => {
+    const savedSymbol = localStorage.getItem("contractSymbol");
+    return savedSymbol && ["xBond", "iBond", "PLSTR"].includes(savedSymbol) ? savedSymbol : "xBond";
+  });
   const [isController, setIsController] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -29,6 +33,11 @@ const App = () => {
   };
 
   const CONTROLLER_ADDRESS = "0x6aaE8556C69b795b561CB75ca83aF6187d2F0AF5";
+
+  // Save contractSymbol to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem("contractSymbol", contractSymbol);
+  }, [contractSymbol]);
 
   const initializeApp = async () => {
     setLoading(true);
@@ -65,7 +74,6 @@ const App = () => {
       const contractInstance = new web3Instance.eth.Contract(contractABI, contractAddress);
       setContract(contractInstance);
 
-      // Check if the user is the controller
       setIsController(account.toLowerCase() === CONTROLLER_ADDRESS.toLowerCase());
       console.log("App controller check:", {
         account,
