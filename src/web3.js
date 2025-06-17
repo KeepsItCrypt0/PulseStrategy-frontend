@@ -3848,6 +3848,8 @@ export const PLSTR_ABI = [
 		"type": "function"
 	}
 ];
+
+// Network configurations
 export const networkConfigs = {
   369: {
     chainId: "0x171",
