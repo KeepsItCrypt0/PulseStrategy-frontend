@@ -39,7 +39,7 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
   };
 
   // Convert amount to token's native units
-  const toTokenUnits = (amount, const decimals) => {
+  const toTokenUnits = (amount, decimals) => {
     try {
       if (!amount || Number(amount) <= 0) return "0";
       return web3.utils.toWei(amount, "ether");
