@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { formatNumber } from "../utils/format";
 import { tokenAddresses, incABI, plsxABI } from "../web3";
 
-const IssueShares = ({ web3, contract, account, chainId, contractSymbol }) => {
+const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTransactionSuccess }) => {
   const [amount, setAmount] = useState("");
   const [displayAmount, setDisplayAmount] = useState("");
   const [tokenBalance, setTokenBalance] = useState("0");
@@ -39,7 +39,7 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol }) => {
   };
 
   // Convert amount to token's native units
-  const toTokenUnits = (amount, decimals) => {
+  const toTokenUnits = (amount, const decimals) => {
     try {
       if (!amount || Number(amount) <= 0) return "0";
       return web3.utils.toWei(amount, "ether");
@@ -93,7 +93,7 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol }) => {
 
   const handleIssueShares = async () => {
     if (!amount || Number(amount) <= 0 || Number(amount) > Number(tokenBalance)) {
-      setError(`Please enter a valid amount within your ${defaultToken} balance`);
+      setError(`Please Enter a valid amount within your ${defaultToken} balance`);
       return;
     }
     setLoading(true);
@@ -112,6 +112,9 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol }) => {
       setAmount("");
       setDisplayAmount("");
       fetchTokenBalance();
+      if (onTransactionSuccess) {
+        onTransactionSuccess();
+      }
     } catch (err) {
       setError(`Error issuing shares: ${err.message}`);
       console.error("Issue shares error:", err);
