@@ -35,11 +35,11 @@ const ClaimPLSTR = ({ contract, account, web3, chainId, contractSymbol }) => {
       } catch (err) {
         console.warn("getClaimEligibility failed, trying getPendingPLSTR as fallback:", err.message);
         // Fallback to getPendingPLSTR for old contract
-        const xBondResult = await contract.methods.getPendingPLSTR(tokenAddresses[369].xBOND, account).call();
-        const iBondResult = await contract.methods.getPendingPLSTR(tokenAddresses[369].iBOND, account).call();
+        const xBondResult = await contract.methods.getPendingPLSTR(tokenAddresses[369].xBond, account).call();
+        const iBondResult = await contract.methods.getPendingPLSTR(tokenAddresses[369].iBond, account).call();
         claimablePLSTR = (BigInt(xBondResult) + BigInt(iBondResult)).toString();
-        xBondBal = await new web3.eth.Contract(PLSTR_ABI, tokenAddresses[369].xBOND).methods.balanceOf(account).call();
-        iBondBal = await new web3.eth.Contract(PLSTR_ABI, tokenAddresses[369].iBOND).methods.balanceOf(account).call();
+        xBondBal = await new web3.eth.Contract(PLSTR_ABI, tokenAddresses[369].xBond).methods.balanceOf(account).call();
+        iBondBal = await new web3.eth.Contract(PLSTR_ABI, tokenAddresses[369].iBond).methods.balanceOf(account).call();
         console.log("getPendingPLSTR fallback parsed:", { claimablePLSTR, xBondBal, iBondBal });
       }
 
@@ -58,8 +58,8 @@ const ClaimPLSTR = ({ contract, account, web3, chainId, contractSymbol }) => {
       });
       setError(`Failed to load claimable PLSTR: ${err.message}`);
       setPendingPLSTR("0");
-      setXBondBalance("0");
-      setIBondBalance("0");
+      setxBondBalance("0");
+      setiBondBalance("0");
     }
   };
 
@@ -80,8 +80,8 @@ const ClaimPLSTR = ({ contract, account, web3, chainId, contractSymbol }) => {
         await contract.methods.claimPLSTR().send({ from: account });
       } catch (err) {
         console.warn("claimPLSTR failed, trying claimAllPLSTR:", err.message);
-        await contract.methods.claimAllPLSTR(tokenAddresses[369].xBOND).send({ from: account });
-        await contract.methods.claimAllPLSTR(tokenAddresses[369].iBOND).send({ from: account });
+        await contract.methods.claimAllPLSTR(tokenAddresses[369].xBond).send({ from: account });
+        await contract.methods.claimAllPLSTR(tokenAddresses[369].iBond).send({ from: account });
       }
       alert(`Successfully claimed ${pendingPLSTR} PLSTR!`);
       setPendingPLSTR("0");
@@ -108,10 +108,10 @@ const ClaimPLSTR = ({ contract, account, web3, chainId, contractSymbol }) => {
         Pending PLSTR: <span className="text-[#4B0082]">{formatNumber(pendingPLSTR)} PLSTR</span>
       </p>
       <p className="text-gray-500 mb-2">
-        xBOND Balance: <span className="text-[#4B0082]">{formatNumber(xBondBalance)} xBOND</span>
+        xBond Balance: <span className="text-[#4B0082]">{formatNumber(xBondBalance)} xBond</span>
       </p>
       <p className="text-gray-500 mb-2">
-        iBOND Balance: <span className="text-[#4B0082]">{formatNumber(iBondBalance)} iBOND</span>
+        iBond Balance: <span className="text-[#4B0082]">{formatNumber(iBondBalance)} iBond</span>
       </p>
       <button
         onClick={handleClaim}
