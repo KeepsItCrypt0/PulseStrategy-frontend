@@ -13,7 +13,6 @@ import { PLSTR_ABI, xBond_ABI, iBond_ABI } from "./web3";
 import "./index.css";
 
 const App = () => {
-  // Initialize contractSymbol from localStorage, default to "xBond"
   const [web3, setWeb3] = useState(null);
   const [account, setAccount] = useState(null);
   const [chainId, setChainId] = useState(null);
@@ -34,7 +33,6 @@ const App = () => {
 
   const CONTROLLER_ADDRESS = "0x6aaE8556C69b795b561CB75ca83aF6187d2F0AF5";
 
-  // Save contractSymbol to localStorage when it changes
   useEffect(() => {
     localStorage.setItem("contractSymbol", contractSymbol);
   }, [contractSymbol]);
@@ -99,6 +97,12 @@ const App = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Callback to refresh app after a successful transaction
+  const onTransactionSuccess = () => {
+    console.log("Transaction successful, reinitializing app...");
+    initializeApp();
   };
 
   useEffect(() => {
@@ -197,6 +201,7 @@ const App = () => {
                 web3={web3}
                 chainId={chainId}
                 contractSymbol={contractSymbol}
+                onTransactionSuccess={onTransactionSuccess}
               />
             )}
             <RedeemShares
@@ -205,6 +210,7 @@ const App = () => {
               web3={web3}
               chainId={chainId}
               contractSymbol={contractSymbol}
+              onTransactionSuccess={onTransactionSuccess}
             />
             {contractSymbol === "PLSTR" ? (
               <>
@@ -214,12 +220,14 @@ const App = () => {
                   web3={web3}
                   chainId={chainId}
                   contractSymbol={contractSymbol}
+                  onTransactionSuccess={onTransactionSuccess}
                 />
                 <WeightUpdate
                   contract={contract}
                   account={account}
                   web3={web3}
                   chainId={chainId}
+                  onTransactionSuccess={onTransactionSuccess}
                 />
               </>
             ) : (
@@ -229,6 +237,7 @@ const App = () => {
                 web3={web3}
                 chainId={chainId}
                 contractSymbol={contractSymbol}
+                onTransactionSuccess={onTransactionSuccess}
               />
             )}
             {isController && (
@@ -239,6 +248,7 @@ const App = () => {
                 chainId={chainId}
                 contractSymbol={contractSymbol}
                 appIsController={isController}
+                onTransactionSuccess={onTransactionSuccess}
               />
             )}
           </>
