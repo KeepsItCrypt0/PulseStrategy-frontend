@@ -9,7 +9,7 @@ import ClaimPLSTR from "./components/ClaimPLSTR";
 import AdminPanel from "./components/AdminPanel";
 import WeightUpdate from "./components/WeightUpdate";
 import { getWeb3, getAccount, getContract, contractAddresses } from "./web3";
-import { PLSTR_ABI, xBOND_ABI, iBOND_ABI } from "./web3";
+import { PLSTR_ABI, xBond_ABI, iBond_ABI } from "./web3";
 import "./index.css";
 
 const App = () => {
@@ -17,18 +17,18 @@ const App = () => {
   const [account, setAccount] = useState(null);
   const [chainId, setChainId] = useState(null);
   const [contract, setContract] = useState(null);
-  const [contractSymbol, setContractSymbol] = useState("xBOND");
+  const [contractSymbol, setContractSymbol] = useState("xBond");
   const [isController, setIsController] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const contractABIs = {
     PLSTR: PLSTR_ABI,
-    xBOND: xBOND_ABI,
-    iBOND: iBOND_ABI,
+    xBond: xBond_ABI,
+    iBond: iBond_ABI,
   };
 
-  const CONTROLLER_ADDRESS = "0x6aaE8556C69b795b561CB75ca83aF6187d2F0AF5"; // Same for PLSTR, xBOND, iBOND
+  const CONTROLLER_ADDRESS = "0x6aaE8556C69b795b561CB75ca83aF6187d2F0AF5";
 
   const initializeApp = async () => {
     setLoading(true);
@@ -142,7 +142,7 @@ const App = () => {
             className="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
             disabled={!web3 || chainId !== 369}
           >
-            {["xBOND", "iBOND", "PLSTR"].map((symbol) => (
+            {["xBond", "iBond", "PLSTR"].map((symbol) => (
               <option key={symbol} value={symbol}>
                 {symbol}
               </option>
