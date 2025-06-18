@@ -120,6 +120,21 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
       ) : (
         <>
           <h3 className="text-lg font-medium mt-4">Contract Details</h3>
+          {/* Move balance above total supply */}
+          {contractSymbol === "PLSTR" && (
+            <p className="text-gray-600">
+              vPLS Balance: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.vPlsBalance)} vPLS</span>
+            </p>
+          )}
+          {contractSymbol !== "PLSTR" && (
+            <p className="text-gray-600">
+              {contractSymbol === "xBond" ? "PLSX" : "INC"} Balance:{" "}
+              <span className="text-[#4B0082]">
+                {formatNumber(contractSymbol === "xBond" ? contractData.metrics.plsxBalance : contractData.metrics.incBalance)}{" "}
+                {contractSymbol === "xBond" ? "PLSX" : "INC"}
+              </span>
+            </p>
+          )}
           <p className="text-gray-600">
             Total Supply: <span className="text-[#4B0082]">{formatNumber(contractData.totalSupply)} {contractSymbol}</span>
           </p>
@@ -132,9 +147,6 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
           {contractSymbol === "PLSTR" && (
             <>
               <p className="text-gray-600">
-                vPLS Balance: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.vPlsBalance)} vPLS</span>
-              </p>
-              <p className="text-gray-600">
                 Avg PLSTR per Bond: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.avgPlstrPerBond)}</span>
               </p>
               <p className="text-gray-600">
@@ -144,13 +156,6 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
           )}
           {contractSymbol !== "PLSTR" && (
             <>
-              <p className="text-gray-600">
-                {contractSymbol === "xBond" ? "PLSX" : "INC"} Balance:{" "}
-                <span className="text-[#4B0082]">
-                  {formatNumber(contractSymbol === "xBond" ? contractData.metrics.plsxBalance : contractData.metrics.incBalance)}{" "}
-                  {contractSymbol === "xBond" ? "PLSX" : "INC"}
-                </span>
-              </p>
               <p className="text-gray-600">
                 Backing Ratio:{" "}
                 <span className="text-[#4B0082]">
