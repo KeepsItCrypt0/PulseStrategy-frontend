@@ -110,12 +110,6 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
     );
   }
 
-  // Helper for symbol-based label
-  const symbolLabel = (type: string) => {
-    // type: "Supply", "Minted", "Burned"
-    return `${contractSymbol} ${type.toLowerCase()}`;
-  };
-
   return (
     <div className="bg-white bg-opacity-90 shadow-lg rounded-lg p-6 card">
       <h2 className="text-xl font-semibold mb-4 text-[#4B0082]">{contractSymbol} Contract Info</h2>
@@ -126,11 +120,25 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
       ) : (
         <>
           <h3 className="text-lg font-medium mt-4">Contract Details</h3>
-          {/* Show balances FIRST */}
+          <p className="text-gray-600">
+            Total Supply: <span className="text-[#4B0082]">{formatNumber(contractData.totalSupply)} {contractSymbol}</span>
+          </p>
+          <p className="text-gray-600">
+            Total Minted: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.totalMinted)} {contractSymbol}</span>
+          </p>
+          <p className="text-gray-600">
+            Total Burned: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.totalBurned)} {contractSymbol}</span>
+          </p>
           {contractSymbol === "PLSTR" && (
             <>
               <p className="text-gray-600">
                 vPLS Balance: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.vPlsBalance)} vPLS</span>
+              </p>
+              <p className="text-gray-600">
+                Avg PLSTR per Bond: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.avgPlstrPerBond)}</span>
+              </p>
+              <p className="text-gray-600">
+                vPLS Backing Ratio: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.vPlsBackingRatio)}</span>
               </p>
             </>
           )}
@@ -143,32 +151,6 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
                   {contractSymbol === "xBond" ? "PLSX" : "INC"}
                 </span>
               </p>
-            </>
-          )}
-
-          {/* Then supply, minted, burned */}
-          <p className="text-gray-600">
-            {symbolLabel("Supply")}: <span className="text-[#4B0082]">{formatNumber(contractData.totalSupply)} {contractSymbol}</span>
-          </p>
-          <p className="text-gray-600">
-            {symbolLabel("Minted")}: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.totalMinted)} {contractSymbol}</span>
-          </p>
-          <p className="text-gray-600">
-            {symbolLabel("Burned")}: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.totalBurned)} {contractSymbol}</span>
-          </p>
-
-          {contractSymbol === "PLSTR" && (
-            <>
-              <p className="text-gray-600">
-                Avg PLSTR per Bond: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.avgPlstrPerBond)}</span>
-              </p>
-              <p className="text-gray-600">
-                vPLS Backing Ratio: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.vPlsBackingRatio)}</span>
-              </p>
-            </>
-          )}
-          {contractSymbol !== "PLSTR" && (
-            <>
               <p className="text-gray-600">
                 Backing Ratio:{" "}
                 <span className="text-[#4B0082]">
