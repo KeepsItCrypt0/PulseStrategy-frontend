@@ -69,12 +69,12 @@ const WeightUpdate = ({ contract, account, web3, chainId, onTransactionSuccess }
   }, [contract, web3, chainId]);
 
   const handleUpdateWeight = async () => {
-    if (!window.confirm("Are you sure you want to update the iBond weight? This can only be done every 24 hours.")) return;
+    if (!window.confirm("Are you sure you want to update the Bond weight? This can only be done every 24 hours.")) return;
     setLoading(true);
     setError("");
     try {
       await contract.methods.updateWeight().send({ from: account });
-      alert("iBond weight updated successfully!");
+      alert("Bond weight updated successfully!");
       // Refresh data
       await fetchWeightData();
       if (onTransactionSuccess) {
@@ -95,7 +95,7 @@ const WeightUpdate = ({ contract, account, web3, chainId, onTransactionSuccess }
 
   return (
     <div className="bg-white bg-opacity-90 shadow-lg rounded-lg p-6 card">
-      <h2 className="text-xl font-semibold mb-4 text-[#4B0082]">Update iBond Weight</h2>
+      <h2 className="text-xl font-semibold mb-4 text-[#4B0082]">Update Bond Weight</h2>
       <p className="text-gray-600">
         Current Weight: <span className="text-[#4B0082]">{formatNumber(weightData.currentWeight)}</span>
       </p>
