@@ -3856,7 +3856,7 @@ export const networkConfigs = {
     chainName: "PulseChain",
     rpcUrls: ["https://rpc.pulsechain.com"],
     nativeCurrency: { name: "Pulse", symbol: "PLS", decimals: 18 },
-    blockExplorerUrls: ["https://midgard.wtf"],
+    blockExplorerUrls: ["https://kekxplorer.avecdra.pro"],
   },
 };
 
