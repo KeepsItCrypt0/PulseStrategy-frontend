@@ -49,20 +49,19 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
     }
   };
 
-  // Format input value with commas
+  // Format input value with commas and preserve decimals
   const formatInputValue = (value) => {
     if (!value) return "";
-    const num = Number(value.replace(/,/g, ""));
-    if (isNaN(num)) return value;
-    return new Intl.NumberFormat("en-US", {
-      maximumFractionDigits: 18,
-      minimumFractionDigits: 0,
-    }).format(num);
+    const [intPart, decPart] = value.replace(/,/g, "").split(".");
+    // Avoid formatting '0' as '0,', show empty string if cleared
+    if (intPart === undefined || intPart === "") return decPart !== undefined ? `.${decPart}` : "";
+    const formattedInt = new Intl.NumberFormat("en-US").format(Number(intPart));
+    return decPart !== undefined ? `${formattedInt}.${decPart}` : (intPart ? formattedInt : "");
   };
 
-  // Handle input change
+  // Handle input change to allow decimals and commas
   const handleAmountChange = (e) => {
-    const rawValue = e.target.value.replace(/,/g, "");
+    let rawValue = e.target.value.replace(/,/g, "");
     if (rawValue === "" || /^[0-9]*\.?[0-9]*$/.test(rawValue)) {
       setAmount(rawValue);
       setDisplayAmount(formatInputValue(rawValue));
