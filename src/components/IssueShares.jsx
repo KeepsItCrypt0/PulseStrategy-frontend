@@ -8,6 +8,8 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
   const [tokenBalance, setTokenBalance] = useState("0");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isIssuanceActive, setIsIssuanceActive] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(0);
 
   // Null checks for props
   if (!web3 || !contract || !account || !chainId || !contractSymbol) {
@@ -76,8 +78,26 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
     }
   };
 
+  const checkIssuanceStatus = async () => {
+    try {
+      const { isActive, timeRemaining } = await contract.methods.getIssuanceStatus().call();
+      setIsIssuanceActive(isActive);
+      setTimeRemaining(Number(timeRemaining));
+      console.log("Issuance status:", { isActive, timeRemaining });
+      if (!isActive) {
+        setError("Issuance period has ended. No further shares can be issued.");
+      }
+    } catch (err) {
+      console.error("Error checking issuance status:", err);
+      setError("Failed to check issuance status: " + err.message);
+    }
+  };
+
   useEffect(() => {
-    if (web3 && contract && account && chainId === 369) fetchTokenBalance();
+    if (web3 && contract && account && chainId === 369) {
+      fetchTokenBalance();
+      checkIssuanceStatus();
+    }
   }, [web3, contract, account, chainId, contractSymbol]);
 
   if (chainId !== 369) {
@@ -88,6 +108,14 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
   const handleIssueShares = async () => {
     if (!amount || Number(amount) <= 0 || Number(amount) > Number(tokenBalance)) {
       setError(`Please enter a valid amount within your ${defaultToken} balance`);
+      return;
+    }
+    if (!isIssuanceActive) {
+      setError("Issuance period has ended. No further shares can be issued.");
+      return;
+    }
+    if (Number(amount) < 1) {
+      setError("Amount must be at least 1 PLSX.");
       return;
     }
     setLoading(true);
@@ -120,7 +148,7 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
         await tokenContract.methods.approve(contractAddress, tokenAmount).send({
           from: account,
           gas: gasEstimate,
-          maxPriorityFeePerGas: web3.utils.toWei("2", "gwei"), // 2 beats (0.000000002 PLS)
+          maxPriorityFeePerGas: web3.utils.toWei("2", "gwei"), // 2 beats
           maxFeePerGas: web3.utils.toWei("7000000", "gwei"), // 7,000,000 beats (~0.007 PLS)
         });
         console.log("Approval successful");
@@ -171,6 +199,11 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
       <p className="text-gray-600 mb-2">
         {defaultToken} Balance: <span className="text-[#4B0082]">{formatNumber(tokenBalance)} {defaultToken}</span>
       </p>
+      <p className="text-gray-600 mb-2">
+        Issuance Status: <span className={isIssuanceActive ? "text-green-600" : "text-red-600"}>
+          {isIssuanceActive ? `Active (${Math.floor(timeRemaining / 86400)} days remaining)` : "Ended"}
+        </span>
+      </p>
       <div className="mb-4">
         <label className="text-gray-600">Token</label>
         <input
@@ -186,9 +219,9 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
           type="text"
           value={displayAmount}
           onChange={handleAmountChange}
-          placeholder={`Enter ${defaultToken} amount`}
+          placeholder={`Enter ${defaultToken} amount (min 1)`}
           className="w-full p-2 border rounded-lg"
-          disabled={loading}
+          disabled={loading || !isIssuanceActive}
         />
         <p className="text-gray-600 mt-2">
           Estimated {contractSymbol} (after 0.5% fee): <span className="text-[#4B0082]">{formatNumber(estimatedShares)}</span>
@@ -199,7 +232,7 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
       </div>
       <button
         onClick={handleIssueShares}
-        disabled={loading || !amount || Number(amount) <= 0}
+        disabled={loading || !amount || Number(amount) <= 0 || !isIssuanceActive || Number(amount) < 1}
         className="btn-primary"
       >
         {loading ? "Processing..." : "Issue"}
