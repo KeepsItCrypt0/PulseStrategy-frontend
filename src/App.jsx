@@ -233,7 +233,7 @@ const App = () => {
             />
             {contractSymbol === "PLStr" && (
               <>
-                <ClaimPLSTR
+                <ClaimPLStr
                   contract={contract}
                   account={account}
                   web3={web3}
