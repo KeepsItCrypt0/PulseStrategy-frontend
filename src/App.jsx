@@ -8,9 +8,11 @@ import ClaimPLStr from "./components/ClaimPLStr";
 import AdminPanel from "./components/AdminPanel";
 import WeightUpdate from "./components/WeightUpdate";
 import FrontPage from "./components/FrontPage";
-import { getWeb3, getAccount, getContract, contractAddresses } from "./web3";
+import { getWeb3, getAccount, contractAddresses } from "./web3";
 import { PLStr_ABI, xBond_ABI, iBond_ABI } from "./web3";
 import "./index.css";
+
+// ... (rest of the imports and state declarations remain unchanged)
 
 const App = () => {
   const [web3, setWeb3] = useState(null);
@@ -38,13 +40,15 @@ const App = () => {
     localStorage.setItem("contractSymbol", contractSymbol);
   }, [contractSymbol]);
 
-  const initializeApp = async () => {
+  const initializeApp = async (newContractSymbol = contractSymbol) => {
     setLoading(true);
     setError("");
+    setContract(null);
     try {
       const web3Instance = await getWeb3();
       if (!web3Instance) {
         setError("Failed to initialize Web3. Please connect your wallet.");
+        setLoading(false);
         return;
       }
       setWeb3(web3Instance);
@@ -54,45 +58,38 @@ const App = () => {
 
       if (chainId !== 369) {
         setError("Please connect to PulseChain (chainId 369).");
+        setLoading(false);
         return;
       }
 
       const account = await getAccount(web3Instance);
       if (!account) {
         setError("No account found. Please connect your wallet.");
+        setLoading(false);
         return;
       }
       setAccount(account);
 
-      const contractAddress = contractAddresses[369]?.[contractSymbol];
-      const contractABI = contractABIs[contractSymbol];
+      const contractAddress = contractAddresses[369]?.[newContractSymbol];
+      const contractABI = contractABIs[newContractSymbol];
       if (!contractAddress || !contractABI) {
-        throw new Error(`Contract address or ABI not found for ${contractSymbol} on PulseChain`);
+        throw new Error(`Contract address or ABI not found for ${newContractSymbol} on PulseChain`);
       }
 
       const contractInstance = new web3Instance.eth.Contract(contractABI, contractAddress);
       setContract(contractInstance);
 
       setIsController(account.toLowerCase() === CONTROLLER_ADDRESS.toLowerCase());
-      console.log("App controller check:", {
-        account,
-        controllerAddress: CONTROLLER_ADDRESS,
-        isController: account.toLowerCase() === CONTROLLER_ADDRESS.toLowerCase(),
-        chainId,
-        contractAddress,
-        contractSymbol,
-      });
-
       console.log("App initialized:", {
         chainId,
         account,
         contractAddress,
-        contractSymbol,
+        contractSymbol: newContractSymbol,
       });
     } catch (error) {
       console.error("App initialization failed:", {
         error: error.message,
-        contractSymbol,
+        contractSymbol: newContractSymbol,
       });
       setError(`Initialization failed: ${error.message || "Unknown error"}`);
     } finally {
@@ -103,6 +100,11 @@ const App = () => {
   const onTransactionSuccess = () => {
     console.log("Transaction successful, reinitializing app...");
     initializeApp();
+  };
+
+  const handleContractChange = (symbol) => {
+    setContractSymbol(symbol);
+    initializeApp(symbol);
   };
 
   useEffect(() => {
@@ -129,7 +131,7 @@ const App = () => {
         window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
       };
     }
-  }, [contractSymbol, showFrontPage]);
+  }, [showFrontPage]);
 
   const handleEnterApp = () => {
     setShowFrontPage(false);
@@ -142,7 +144,7 @@ const App = () => {
   if (loading) {
     return (
       <div className="min-h-screen gradient-bg flex flex-col items-center p-4">
-        <p className="text-center text-white">Loading...</p>
+        <p className="text-center text-white">Loading contract data...</p>
       </div>
     );
   }
@@ -169,13 +171,13 @@ const App = () => {
           {["xBond", "iBond", "PLStr"].map((symbol) => (
             <button
               key={symbol}
-              onClick={() => setContractSymbol(symbol)}
-              disabled={!web3 || chainId !== 369}
+              onClick={() => handleContractChange(symbol)}
+              disabled={!web3 || chainId !== 369 || loading}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 contractSymbol === symbol
-                  ? "bg-purple-600 text-white"
+                  ? "btn-primary"
                   : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              } ${(!web3 || chainId !== 369) ? "opacity-50 cursor-not-allowed" : ""}`}
+              } ${(!web3 || chainId !== 369 || loading) ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               {symbol}
             </button>
@@ -189,6 +191,7 @@ const App = () => {
           contractSymbol={contractSymbol}
         />
       </header>
+      {/* ... rest of the JSX (main and footer) remains unchanged ... */}
       <main className="w-full max-w-4xl space-y-6">
         {error ? (
           <p className="text-center text-red-700">{error}</p>
@@ -222,11 +225,11 @@ const App = () => {
             )}
             <RedeemShares
               contract={contract}
-              account={account}
-              web3={web3}
-              chainId={chainId}
-              contractSymbol={contractSymbol}
-              onTransactionSuccess={onTransactionSuccess}
+        account={account}
+        web3={web3}
+        chainId={chainId}
+        contractSymbol={contractSymbol}
+        onTransactionSuccess={onTransactionSuccess}
             />
             {contractSymbol === "PLStr" && (
               <>
