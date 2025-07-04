@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import ConnectWallet from "./components/ConnectWallet";
 import ContractInfo from "./components/ContractInfo";
 import UserInfo from "./components/UserInfo";
@@ -11,8 +11,6 @@ import FrontPage from "./components/FrontPage";
 import { getWeb3, getAccount, contractAddresses } from "./web3";
 import { PLStr_ABI, xBond_ABI, iBond_ABI } from "./web3";
 import "./index.css";
-
-// ... (rest of the imports and state declarations remain unchanged)
 
 const App = () => {
   const [web3, setWeb3] = useState(null);
@@ -40,33 +38,31 @@ const App = () => {
     localStorage.setItem("contractSymbol", contractSymbol);
   }, [contractSymbol]);
 
-  const initializeApp = async (newContractSymbol = contractSymbol) => {
+  const initializeApp = useCallback(async (newContractSymbol = contractSymbol) => {
     setLoading(true);
     setError("");
     setContract(null);
+    setWeb3(null); // Reset Web3 to ensure fresh connection
+    setAccount(null); // Reset account to avoid stale data
+    setChainId(null); // Reset chainId to avoid stale network
     try {
-      const web3Instance = await getWeb3();
+      const web3Instance = await Promise.race([
+        getWeb3(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Web3 provider timeout")), 10000)),
+      ]);
       if (!web3Instance) {
-        setError("Failed to initialize Web3. Please connect your wallet.");
-        setLoading(false);
-        return;
+        throw new Error("Failed to initialize Web3. Please connect your wallet.");
       }
-      setWeb3(web3Instance);
-
-      const chainId = Number(await web3Instance.eth.getChainId());
+      setWeb3(web3 MAGNITUDEweb3Instance.eth.getChainId());
       setChainId(chainId);
 
       if (chainId !== 369) {
-        setError("Please connect to PulseChain (chainId 369).");
-        setLoading(false);
-        return;
+        throw new Error("Please connect to PulseChain (chainId 369).");
       }
 
       const account = await getAccount(web3Instance);
       if (!account) {
-        setError("No account found. Please connect your wallet.");
-        setLoading(false);
-        return;
+        throw new Error("No account found. Please connect your wallet.");
       }
       setAccount(account);
 
@@ -95,17 +91,26 @@ const App = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [contractSymbol, contractABIs]);
 
   const onTransactionSuccess = () => {
     console.log("Transaction successful, reinitializing app...");
     initializeApp();
   };
 
-  const handleContractChange = (symbol) => {
+  // Debounce function to prevent rapid contract switches
+  const debounce = (func, delay) => {
+    let timeoutId;
+    return (...args) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => func(...args), delay);
+    };
+  };
+
+  const handleContractChange = useCallback(debounce((symbol) => {
     setContractSymbol(symbol);
     initializeApp(symbol);
-  };
+  }, 500), [initializeApp]);
 
   useEffect(() => {
     if (!showFrontPage) {
@@ -131,7 +136,7 @@ const App = () => {
         window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
       };
     }
-  }, [showFrontPage]);
+  }, [showFrontPage, initializeApp]);
 
   const handleEnterApp = () => {
     setShowFrontPage(false);
@@ -166,14 +171,14 @@ const App = () => {
             ? `Interact with the ${contractSymbol} contract on PulseChain`
             : `Connect your wallet to interact with the contract`}
         </p>
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 flex flexibly-wrap gap-2">
           <label className="text-gray-600 mr-2 self-center">Select Contract:</label>
           {["xBond", "iBond", "PLStr"].map((symbol) => (
             <button
               key={symbol}
               onClick={() => handleContractChange(symbol)}
               disabled={!web3 || chainId !== 369 || loading}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
                 contractSymbol === symbol
                   ? "btn-primary"
                   : "bg-gray-200 text-gray-700 hover:bg-gray-300"
@@ -191,7 +196,6 @@ const App = () => {
           contractSymbol={contractSymbol}
         />
       </header>
-      {/* ... rest of the JSX (main and footer) remains unchanged ... */}
       <main className="w-full max-w-4xl space-y-6">
         {error ? (
           <p className="text-center text-red-700">{error}</p>
@@ -225,18 +229,17 @@ const App = () => {
             )}
             <RedeemShares
               contract={contract}
-        account={account}
-        web3={web3}
-        chainId={chainId}
-        contractSymbol={contractSymbol}
-        onTransactionSuccess={onTransactionSuccess}
+              account={account}
+              web3={web3}
+              chainId={chainId}
+              contractSymbol={contractSymbol}
+              onTransactionSuccess={onTransactionSuccess}
             />
             {contractSymbol === "PLStr" && (
               <>
                 <ClaimPLStr
                   contract={contract}
                   account={account}
-                  web3={web3}
                   chainId={chainId}
                   contractSymbol={contractSymbol}
                   onTransactionSuccess={onTransactionSuccess}
