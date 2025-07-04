@@ -5,7 +5,7 @@ export const contractAddresses = {
   369: {
     iBond: "0xc087175be23F37DE50A94C36287feCC24a188993",
     xBond: "0x2c858178F5D563Bb1B6C88e9ae58AF533cC8772e",
-    PLSTR: "0x557DDecea197cCb2c5998Eb94CF17f707C2522AE",
+    PLStr: "0xadA586779bC523AaDd6285F6F42E6bd7dbbc20fE",
   },
 };
 
@@ -708,6 +708,7 @@ export const vPLS_ABI = [
         "type": "function"
     }
 ];
+
 export const incABI = [
     {
         "inputs": [],
@@ -1383,6 +1384,7 @@ export const incABI = [
         "type": "event"
     }
 ];
+
 export const plsxABI = [
     {
         "inputs": [],
@@ -2058,6 +2060,7 @@ export const plsxABI = [
         "type": "event"
     }
 ];
+
 export const iBond_ABI = [
 	{
 		"inputs": [],
@@ -2176,11 +2179,6 @@ export const iBond_ABI = [
 		"type": "error"
 	},
 	{
-		"inputs": [],
-		"name": "PairNotSet",
-		"type": "error"
-	},
-	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -2189,11 +2187,6 @@ export const iBond_ABI = [
 			}
 		],
 		"name": "SafeERC20FailedOperation",
-		"type": "error"
-	},
-	{
-		"inputs": [],
-		"name": "SwapFailed",
 		"type": "error"
 	},
 	{
@@ -2224,19 +2217,6 @@ export const iBond_ABI = [
 			}
 		],
 		"name": "Approval",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "pair",
-				"type": "address"
-			}
-		],
-		"name": "PairAddressSet",
 		"type": "event"
 	},
 	{
@@ -2295,25 +2275,6 @@ export const iBond_ABI = [
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "caller",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "TokensBurned",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
 				"name": "from",
 				"type": "address"
 			},
@@ -2357,13 +2318,13 @@ export const iBond_ABI = [
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "iBondToController",
+				"name": "iBondToOriginAddress",
 				"type": "uint256"
 			},
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "incReceived",
+				"name": "burned",
 				"type": "uint256"
 			}
 		],
@@ -2435,13 +2396,6 @@ export const iBond_ABI = [
 			}
 		],
 		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "burnContractiBond",
-		"outputs": [],
-		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -2548,19 +2502,6 @@ export const iBond_ABI = [
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "pair",
-				"type": "address"
-			}
-		],
-		"name": "setPairAddress",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
 		"inputs": [],
 		"name": "symbol",
 		"outputs": [
@@ -2595,7 +2536,7 @@ export const iBond_ABI = [
 			},
 			{
 				"internalType": "uint256",
-				"name": "amount",
+				"name": "value",
 				"type": "uint256"
 			}
 		],
@@ -2624,7 +2565,7 @@ export const iBond_ABI = [
 			},
 			{
 				"internalType": "uint256",
-				"name": "amount",
+				"name": "value",
 				"type": "uint256"
 			}
 		],
@@ -2640,6 +2581,7 @@ export const iBond_ABI = [
 		"type": "function"
 	}
 ];
+
 export const xBond_ABI = [
 	{
 		"inputs": [],
@@ -2758,11 +2700,6 @@ export const xBond_ABI = [
 		"type": "error"
 	},
 	{
-		"inputs": [],
-		"name": "PairNotSet",
-		"type": "error"
-	},
-	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -2771,11 +2708,6 @@ export const xBond_ABI = [
 			}
 		],
 		"name": "SafeERC20FailedOperation",
-		"type": "error"
-	},
-	{
-		"inputs": [],
-		"name": "SwapFailed",
 		"type": "error"
 	},
 	{
@@ -2806,19 +2738,6 @@ export const xBond_ABI = [
 			}
 		],
 		"name": "Approval",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "pair",
-				"type": "address"
-			}
-		],
-		"name": "PairAddressSet",
 		"type": "event"
 	},
 	{
@@ -2877,25 +2796,6 @@ export const xBond_ABI = [
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "caller",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "TokensBurned",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
 				"name": "from",
 				"type": "address"
 			},
@@ -2939,13 +2839,13 @@ export const xBond_ABI = [
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "xBondToController",
+				"name": "xBondToOriginAddress",
 				"type": "uint256"
 			},
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "plsxReceived",
+				"name": "burned",
 				"type": "uint256"
 			}
 		],
@@ -3017,13 +2917,6 @@ export const xBond_ABI = [
 			}
 		],
 		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "burnContractxBond",
-		"outputs": [],
-		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -3130,19 +3023,6 @@ export const xBond_ABI = [
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "pair",
-				"type": "address"
-			}
-		],
-		"name": "setPairAddress",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
 		"inputs": [],
 		"name": "symbol",
 		"outputs": [
@@ -3177,7 +3057,7 @@ export const xBond_ABI = [
 			},
 			{
 				"internalType": "uint256",
-				"name": "amount",
+				"name": "value",
 				"type": "uint256"
 			}
 		],
@@ -3206,7 +3086,7 @@ export const xBond_ABI = [
 			},
 			{
 				"internalType": "uint256",
-				"name": "amount",
+				"name": "value",
 				"type": "uint256"
 			}
 		],
@@ -3222,7 +3102,8 @@ export const xBond_ABI = [
 		"type": "function"
 	}
 ];
-export const PLSTR_ABI = [
+
+export const PLStr_ABI = [
 	{
 		"inputs": [],
 		"stateMutability": "nonpayable",
@@ -3406,7 +3287,7 @@ export const PLSTR_ABI = [
 				"type": "uint256"
 			}
 		],
-		"name": "PLSTRBurned",
+		"name": "PLStrBurned",
 		"type": "event"
 	},
 	{
@@ -3423,15 +3304,9 @@ export const PLSTR_ABI = [
 				"internalType": "uint256",
 				"name": "plstrAmount",
 				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "depositIndex",
-				"type": "uint256"
 			}
 		],
-		"name": "PLSTRClaimed",
+		"name": "PLStrClaimed",
 		"type": "event"
 	},
 	{
@@ -3456,7 +3331,39 @@ export const PLSTR_ABI = [
 				"type": "uint256"
 			}
 		],
-		"name": "PLSTRRedeemed",
+		"name": "PLStrRedeemed",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "expiredAmount",
+				"type": "uint256"
+			}
+		],
+		"name": "RewardsExpired",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "reward",
+				"type": "uint256"
+			}
+		],
+		"name": "RewardsUpdated",
 		"type": "event"
 	},
 	{
@@ -3472,12 +3379,6 @@ export const PLSTR_ABI = [
 				"indexed": false,
 				"internalType": "uint256",
 				"name": "vPlsAmount",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "depositIndex",
 				"type": "uint256"
 			}
 		],
@@ -3591,7 +3492,7 @@ export const PLSTR_ABI = [
 	},
 	{
 		"inputs": [],
-		"name": "claimPLSTR",
+		"name": "claimPLStr",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -3623,6 +3524,44 @@ export const PLSTR_ABI = [
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"name": "getBasicMetrics",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "contractTotalSupply",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "vPlsBalance",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "plstrMinted",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "totalBurned",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "backingRatio",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "totalClaimablePLStr",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -3634,7 +3573,7 @@ export const PLSTR_ABI = [
 		"outputs": [
 			{
 				"internalType": "uint256",
-				"name": "claimablePLSTR",
+				"name": "claimablePLStr",
 				"type": "uint256"
 			},
 			{
@@ -3649,60 +3588,12 @@ export const PLSTR_ABI = [
 			},
 			{
 				"internalType": "uint256",
-				"name": "lastClaimedDepositIndex",
+				"name": "xBondPlsxLPBalance",
 				"type": "uint256"
 			},
 			{
 				"internalType": "uint256",
-				"name": "currentDepositIndex",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "getContractMetrics",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "contractTotalSupply",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "vPlsBalance",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "totalMinted",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "totalBurned",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "totalDeposited",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "lastDepositIndex",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "avgPlstrPerBond",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "backingRatio",
+				"name": "iBondIncLPBalance",
 				"type": "uint256"
 			}
 		],
@@ -3724,11 +3615,42 @@ export const PLSTR_ABI = [
 	},
 	{
 		"inputs": [],
+		"name": "getDaysUntilExpiration",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
 		"name": "getLastWeightUpdate",
 		"outputs": [
 			{
 				"internalType": "uint256",
 				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getRewardMetrics",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "rewardPerToken",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "totalPlstrPerBond",
 				"type": "uint256"
 			}
 		],
@@ -3756,7 +3678,7 @@ export const PLSTR_ABI = [
 				"type": "uint256"
 			}
 		],
-		"name": "redeemPLSTR",
+		"name": "redeemPLStr",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -3908,7 +3830,7 @@ export const getContract = async (web3, contractSymbol = "xBond") => {
         ? iBond_ABI
         : contractSymbol === "xBond"
         ? xBond_ABI
-        : PLSTR_ABI;
+        : PLStr_ABI;
     const contract = new web3.eth.Contract(abi, contractAddress);
     console.log("Contract initialized:", {
       chainId,
