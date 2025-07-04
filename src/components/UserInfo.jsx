@@ -9,8 +9,8 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
     claimablePLStr: "0",
     xBondBalance: "0",
     iBondBalance: "0",
-    xBondPlsxLPBalance: "0", // Added
-    iBondIncLPBalance: "0", // Added
+    xBondPlsxLPBalance: "0",
+    iBondIncLPBalance: "0",
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -41,8 +41,8 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
         claimablePLStr: "0",
         xBondBalance: "0",
         iBondBalance: "0",
-        xBondPlsxLPBalance: "0", // Initialize
-        iBondIncLPBalance: "0", // Initialize
+        xBondPlsxLPBalance: "0",
+        iBondIncLPBalance: "0",
       };
 
       const tokenAddrs = tokenAddresses[369];
@@ -209,10 +209,10 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
                 iBond Balance: <span className="text-[#4B0082]">{formatNumber(userData.iBondBalance)} iBond</span>
               </p>
               <p className="text-gray-500">
-                xBond/PLSX LP Balance: <span className="text-[#4B0082]">{formatNumber(userData.xBondPlsxLPBalance)} xBond/PLSX LP</span>
+                xBond/PLSX LP Balance: <span className="text-[#4B0082]">{formatNumber(userData.xBondPlsxLPBalance)} PLP</span>
               </p>
               <p className="text-gray-500">
-                iBond/INC LP Balance: <span className="text-[#4B0082]">{formatNumber(userData.iBondIncLPBalance)} iBond/INC LP</span>
+                iBond/INC LP Balance: <span className="text-[#4B0082]">{formatNumber(userData.iBondIncLPBalance)} PLP</span>
               </p>
             </>
           )}
