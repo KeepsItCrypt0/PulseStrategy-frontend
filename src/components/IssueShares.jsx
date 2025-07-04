@@ -96,12 +96,57 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
       const token = tokens[0];
       const tokenAmount = toTokenUnits(amount, token.decimals);
       if (tokenAmount === "0") throw new Error("Invalid token amount");
+
       const tokenContract = new web3.eth.Contract(token.abi, token.address);
-      const allowance = await tokenContract.methods.allowance(account, contractAddresses[369][contractSymbol]).call();
+      const contractAddress = contractAddresses[369][contractSymbol];
+      const allowance = await tokenContract.methods.allowance(account, contractAddress).call();
+      console.log("Allowance:", allowance.toString(), "Required:", tokenAmount);
+
       if (BigInt(allowance) < BigInt(tokenAmount)) {
-        await tokenContract.methods.approve(contractAddresses[369][contractSymbol], tokenAmount).send({ from: account });
+        console.log("Estimating gas for approval...");
+        let gasEstimate;
+        try {
+          gasEstimate = await tokenContract.methods
+            .approve(contractAddress, tokenAmount)
+            .estimateGas({ from: account });
+          gasEstimate = Math.floor(gasEstimate * 1.2); // Add 20% buffer
+          console.log("Approval gas estimate:", gasEstimate);
+        } catch (err) {
+          console.error("Gas estimation for approval failed:", err);
+          throw new Error(`Failed to estimate gas for approval: ${err.message}`);
+        }
+
+        console.log("Approving token spend...");
+        await tokenContract.methods.approve(contractAddress, tokenAmount).send({
+          from: account,
+          gas: gasEstimate,
+          maxPriorityFeePerGas: web3.utils.toWei("2", "gwei"), // 2 beats (0.000000002 PLS)
+          maxFeePerGas: web3.utils.toWei("7000000", "gwei"), // 7,000,000 beats (~0.007 PLS)
+        });
+        console.log("Approval successful");
       }
-      await contract.methods.issueShares(tokenAmount).send({ from: account });
+
+      console.log("Simulating issueShares...");
+      let issueGasEstimate;
+      try {
+        issueGasEstimate = await contract.methods
+          .issueShares(tokenAmount)
+          .estimateGas({ from: account });
+        issueGasEstimate = Math.floor(issueGasEstimate * 1.2); // Add 20% buffer
+        console.log("issueShares gas estimate:", issueGasEstimate);
+      } catch (err) {
+        console.error("Gas estimation for issueShares failed:", err);
+        throw new Error(`Failed to estimate gas for issueShares: ${err.message}`);
+      }
+
+      console.log("Issuing shares...");
+      await contract.methods.issueShares(tokenAmount).send({
+        from: account,
+        gas: issueGasEstimate,
+        maxPriorityFeePerGas: web3.utils.toWei("2", "gwei"), // 2 beats
+        maxFeePerGas: web3.utils.toWei("7000000", "gwei"), // 7,000,000 beats
+      });
+
       alert(`Successfully issued ${contractSymbol} shares with ${amount} ${token.symbol}!`);
       setAmount("");
       setDisplayAmount("");
