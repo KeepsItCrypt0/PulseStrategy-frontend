@@ -14,8 +14,10 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
       vPlsBackingRatio: "0",
       plsxBackingRatio: "0",
       incBackingRatio: "0",
+      totalClaimablePLStr: "0",
     },
     issuanceStatus: { isActive: false, timeRemaining: 0 },
+    daysUntilExpiration: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -49,11 +51,27 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
         contract.methods[isPLStr ? "getBasicMetrics" : "getContractMetrics"]().call(),
       ];
 
-      if (!isPLStr) {
+      if (isPLStr) {
+        promises.push(contract.methods.getDaysUntilExpiration().call());
+      } else {
         promises.push(contract.methods.getIssuanceStatus().call());
       }
 
-      const [totalSupply, metrics, issuanceStatus] = await Promise.all(promises);
+      const [totalSupply, metrics, extraData] = await Promise.all(promises);
+
+      console.log("Raw contract data:", {
+        contractSymbol,
+        totalSupply,
+        metrics,
+        daysUntilExpiration: isPLStr ? extraData : undefined,
+        issuanceStatus: !isPLStr ? extraData : undefined,
+      });
+
+      const contractTotalSupply = Number(fromUnits(metrics[0]));
+      const vPlsBalance = isPLStr ? Number(fromUnits(metrics[1])) : 0;
+      const totalClaimablePLStr = isPLStr ? Number(fromUnits(metrics[5])) : 0;
+      const effectiveSupply = Number(extraData) === 0 ? contractTotalSupply : contractTotalSupply + totalClaimablePLStr;
+      const vPlsBackingRatio = effectiveSupply > 0 ? (vPlsBalance / effectiveSupply).toFixed(4) : "1.0000";
 
       const data = {
         totalSupply: fromUnits(totalSupply),
@@ -64,7 +82,8 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
               incBalance: "0",
               totalMinted: fromUnits(metrics[2]),
               totalBurned: fromUnits(metrics[3]),
-              vPlsBackingRatio: fromUnits(metrics[4]),
+              vPlsBackingRatio,
+              totalClaimablePLStr: Number(extraData) === 0 ? "0" : fromUnits(metrics[5]),
             }
           : {
               vPlsBalance: "0",
@@ -75,10 +94,12 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
               plsxBackingRatio: contractSymbol === "xBond" ? fromUnits(metrics[4]) : "0",
               incBackingRatio: contractSymbol === "iBond" ? fromUnits(metrics[4]) : "0",
               vPlsBackingRatio: "0",
+              totalClaimablePLStr: "0",
             },
         issuanceStatus: isPLStr
           ? { isActive: false, timeRemaining: 0 }
-          : { isActive: issuanceStatus[0], timeRemaining: Number(issuanceStatus[1]) },
+          : { isActive: extraData[0], timeRemaining: Number(extraData[1]) },
+        daysUntilExpiration: isPLStr ? Number(extraData) : 0,
       };
 
       setContractData(data);
@@ -118,9 +139,17 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
         <>
           <h3 className="text-lg font-medium mt-4">Contract Details</h3>
           {contractSymbol === "PLStr" && (
-            <p className="text-gray-600">
-              vPLS Balance: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.vPlsBalance)} vPLS</span>
-            </p>
+            <>
+              <p className="text-gray-600">
+                vPLS Balance: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.vPlsBalance)} vPLS</span>
+              </p>
+              <p className="text-gray-600">
+                Total Claimable PLStr: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.totalClaimablePLStr)} PLStr</span>
+              </p>
+              <p className="text-gray-600">
+                Days Until Claimable PLStr Expiration: <span className="text-[#4B0082]">{contractData.daysUntilExpiration} days</span>
+              </p>
+            </>
           )}
           {contractSymbol !== "PLStr" && (
             <p className="text-gray-600">
