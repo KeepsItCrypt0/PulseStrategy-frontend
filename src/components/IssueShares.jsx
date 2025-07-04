@@ -122,7 +122,7 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
     }
   };
 
-  const estimatedShares = amount ? (Number(amount) * 0.955).toFixed(6) : "0";
+  const estimatedShares = amount ? (Number(amount) * 0.995).toFixed(6) : "0";
   const feeAmount = amount ? (Number(amount) * 0.005).toFixed(6) : "0";
 
   return (
