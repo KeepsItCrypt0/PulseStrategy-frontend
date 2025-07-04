@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import Connecttesting import { useState, useEffect, useCallback, useRef } from "react";
 import ConnectWallet from "./components/ConnectWallet";
 import ContractInfo from "./components/ContractInfo";
 import UserInfo from "./components/UserInfo";
@@ -41,7 +42,6 @@ const App = () => {
   }, [contractSymbol]);
 
   const initializeApp = useCallback(async (newContractSymbol = contractSymbol) => {
-    // Prevent initialization if called within 2 seconds
     const now = Date.now();
     if (now - lastInitRef.current < 2000) {
       console.log("Initialization throttled to prevent flickering");
@@ -49,12 +49,11 @@ const App = () => {
     }
     lastInitRef.current = now;
 
-    if (!mountedRef.current) return; // Prevent updates if unmounted
+    if (!mountedRef.current) return;
 
     setLoading(true);
     setError("");
     setContract(null);
-    // Only reset web3/account/chainId if necessary
     try {
       let web3Instance = web3;
       if (!web3Instance) {
@@ -114,7 +113,6 @@ const App = () => {
     initializeApp();
   };
 
-  // Debounce function to prevent rapid contract switches
   const debounce = (func, delay) => {
     let timeoutId;
     return (...args) => {
@@ -193,14 +191,14 @@ const App = () => {
             ? `Interact with the ${contractSymbol} contract on PulseChain`
             : `Connect your wallet to interact with the contract`}
         </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <label className="text-gray-600 mr-2 self-center">Select Contract:</label>
+        <div className="mt-4 flex items-center gap-1">
+          <label className="text-gray-600 text-sm mr-1 whitespace-nowrap">Select Contract:</label>
           {["xBond", "iBond", "PLStr"].map((symbol) => (
             <button
               key={symbol}
               onClick={() => handleContractChange(symbol)}
               disabled={!web3 || chainId !== 369 || loading}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
+              className={`px-2 py-1 text-sm rounded-lg font-medium transition-colors whitespace-nowrap ${
                 contractSymbol === symbol
                   ? "btn-primary"
                   : "bg-gray-200 text-gray-700 hover:bg-gray-300"
