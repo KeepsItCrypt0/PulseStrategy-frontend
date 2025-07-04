@@ -53,7 +53,9 @@ const App = () => {
       if (!web3Instance) {
         throw new Error("Failed to initialize Web3. Please connect your wallet.");
       }
-      setWeb3(web3 MAGNITUDEweb3Instance.eth.getChainId());
+      setWeb3(web3Instance);
+
+      const chainId = Number(await web3Instance.eth.getChainId());
       setChainId(chainId);
 
       if (chainId !== 369) {
@@ -171,7 +173,7 @@ const App = () => {
             ? `Interact with the ${contractSymbol} contract on PulseChain`
             : `Connect your wallet to interact with the contract`}
         </p>
-        <div className="mt-4 flex flexibly-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           <label className="text-gray-600 mr-2 self-center">Select Contract:</label>
           {["xBond", "iBond", "PLStr"].map((symbol) => (
             <button
@@ -240,6 +242,7 @@ const App = () => {
                 <ClaimPLStr
                   contract={contract}
                   account={account}
+                  web3={web3}
                   chainId={chainId}
                   contractSymbol={contractSymbol}
                   onTransactionSuccess={onTransactionSuccess}
