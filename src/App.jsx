@@ -4,12 +4,12 @@ import ContractInfo from "./components/ContractInfo";
 import UserInfo from "./components/UserInfo";
 import IssueShares from "./components/IssueShares";
 import RedeemShares from "./components/RedeemShares";
-import ClaimPLSTR from "./components/ClaimPLSTR";
+import ClaimPLStr from "./components/ClaimPLStr";
 import AdminPanel from "./components/AdminPanel";
 import WeightUpdate from "./components/WeightUpdate";
 import FrontPage from "./components/FrontPage";
 import { getWeb3, getAccount, getContract, contractAddresses } from "./web3";
-import { PLSTR_ABI, xBond_ABI, iBond_ABI } from "./web3";
+import { PLStr_ABI, xBond_ABI, iBond_ABI } from "./web3";
 import "./index.css";
 
 const App = () => {
@@ -19,7 +19,7 @@ const App = () => {
   const [contract, setContract] = useState(null);
   const [contractSymbol, setContractSymbol] = useState(() => {
     const savedSymbol = localStorage.getItem("contractSymbol");
-    return savedSymbol && ["xBond", "iBond", "PLSTR"].includes(savedSymbol) ? savedSymbol : "xBond";
+    return savedSymbol && ["xBond", "iBond", "PLStr"].includes(savedSymbol) ? savedSymbol : "xBond";
   });
   const [isController, setIsController] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -27,7 +27,7 @@ const App = () => {
   const [showFrontPage, setShowFrontPage] = useState(true);
 
   const contractABIs = {
-    PLSTR: PLSTR_ABI,
+    PLStr: PLStr_ABI,
     xBond: xBond_ABI,
     iBond: iBond_ABI,
   };
@@ -100,7 +100,6 @@ const App = () => {
     }
   };
 
-  // Callback to refresh app after a successful transaction
   const onTransactionSuccess = () => {
     console.log("Transaction successful, reinitializing app...");
     initializeApp();
@@ -132,7 +131,6 @@ const App = () => {
     }
   }, [contractSymbol, showFrontPage]);
 
-  // Handler to switch to main app
   const handleEnterApp = () => {
     setShowFrontPage(false);
   };
@@ -174,7 +172,7 @@ const App = () => {
             className="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
             disabled={!web3 || chainId !== 369}
           >
-            {["xBond", "iBond", "PLSTR"].map((symbol) => (
+            {["xBond", "iBond", "PLStr"].map((symbol) => (
               <option key={symbol} value={symbol}>
                 {symbol}
               </option>
@@ -206,6 +204,7 @@ const App = () => {
               web3={web3}
               chainId={chainId}
               contractSymbol={contractSymbol}
+              onTransactionSuccess={onTransactionSuccess}
             />
             <UserInfo
               contract={contract}
@@ -214,7 +213,7 @@ const App = () => {
               chainId={chainId}
               contractSymbol={contractSymbol}
             />
-            {contractSymbol !== "PLSTR" && (
+            {contractSymbol !== "PLStr" && (
               <IssueShares
                 contract={contract}
                 account={account}
@@ -232,7 +231,7 @@ const App = () => {
               contractSymbol={contractSymbol}
               onTransactionSuccess={onTransactionSuccess}
             />
-            {contractSymbol === "PLSTR" && (
+            {contractSymbol === "PLStr" && (
               <>
                 <ClaimPLSTR
                   contract={contract}
