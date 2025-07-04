@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { formatNumber } from "../utils/format";
+import { contractAddresses, PLStr_ABI, xBond_ABI, iBond_ABI } from "../web3";
 
 const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
   const [contractData, setContractData] = useState({
@@ -10,8 +11,7 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
       incBalance: "0",
       totalMinted: "0",
       totalBurned: "0",
-      avgPlstrPerBond: "0",
-      vPlsBackingRatio: "0", // Added for PLSTR
+      vPlsBackingRatio: "0",
       plsxBackingRatio: "0",
       incBackingRatio: "0",
     },
@@ -43,13 +43,13 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
       setLoading(true);
       setError(null);
 
-      const isPLSTR = contractSymbol === "PLSTR";
+      const isPLStr = contractSymbol === "PLStr";
       const promises = [
         contract.methods.totalSupply().call(),
-        contract.methods.getContractMetrics().call(),
+        contract.methods[isPLStr ? "getBasicMetrics" : "getContractMetrics"]().call(),
       ];
 
-      if (!isPLSTR) {
+      if (!isPLStr) {
         promises.push(contract.methods.getIssuanceStatus().call());
       }
 
@@ -57,17 +57,14 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
 
       const data = {
         totalSupply: fromUnits(totalSupply),
-        metrics: isPLSTR
+        metrics: isPLStr
           ? {
               vPlsBalance: fromUnits(metrics[1]),
               plsxBalance: "0",
               incBalance: "0",
               totalMinted: fromUnits(metrics[2]),
               totalBurned: fromUnits(metrics[3]),
-              avgPlstrPerBond: fromUnits(metrics[6]),
-              vPlsBackingRatio: fromUnits(metrics[7]), // Added for PLSTR
-              plsxBackingRatio: "0",
-              incBackingRatio: "0",
+              vPlsBackingRatio: fromUnits(metrics[4]),
             }
           : {
               vPlsBalance: "0",
@@ -79,7 +76,7 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
               incBackingRatio: contractSymbol === "iBond" ? fromUnits(metrics[4]) : "0",
               vPlsBackingRatio: "0",
             },
-        issuanceStatus: isPLSTR
+        issuanceStatus: isPLStr
           ? { isActive: false, timeRemaining: 0 }
           : { isActive: issuanceStatus[0], timeRemaining: Number(issuanceStatus[1]) },
       };
@@ -120,13 +117,12 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
       ) : (
         <>
           <h3 className="text-lg font-medium mt-4">Contract Details</h3>
-          {/* Move balance above total supply */}
-          {contractSymbol === "PLSTR" && (
+          {contractSymbol === "PLStr" && (
             <p className="text-gray-600">
               vPLS Balance: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.vPlsBalance)} vPLS</span>
             </p>
           )}
-          {contractSymbol !== "PLSTR" && (
+          {contractSymbol !== "PLStr" && (
             <p className="text-gray-600">
               {contractSymbol === "xBond" ? "PLSX" : "INC"} Balance:{" "}
               <span className="text-[#4B0082]">
@@ -144,17 +140,12 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
           <p className="text-gray-600">
             Total Burned: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.totalBurned)} {contractSymbol}</span>
           </p>
-          {contractSymbol === "PLSTR" && (
-            <>
-              <p className="text-gray-600">
-                Avg PLSTR per Bond: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.avgPlstrPerBond)}</span>
-              </p>
-              <p className="text-gray-600">
-                vPLS Backing Ratio: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.vPlsBackingRatio)}</span>
-              </p>
-            </>
+          {contractSymbol === "PLStr" && (
+            <p className="text-gray-600">
+              vPLS Backing Ratio: <span className="text-[#4B0082]">{formatNumber(contractData.metrics.vPlsBackingRatio)}</span>
+            </p>
           )}
-          {contractSymbol !== "PLSTR" && (
+          {contractSymbol !== "PLStr" && (
             <>
               <p className="text-gray-600">
                 Backing Ratio:{" "}
