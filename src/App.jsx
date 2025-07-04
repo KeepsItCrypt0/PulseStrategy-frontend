@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import Connecttesting import { useState, useEffect, useCallback, useRef } from "react";
 import ConnectWallet from "./components/ConnectWallet";
 import ContractInfo from "./components/ContractInfo";
 import UserInfo from "./components/UserInfo";
