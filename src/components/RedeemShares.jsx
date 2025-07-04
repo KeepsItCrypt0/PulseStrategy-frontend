@@ -1,181 +1,187 @@
 import { useState, useEffect } from "react";
+import { contractAddresses, tokenAddresses, vPLS_ABI, PLStr_ABI, plsxABI, incABI, xBond_ABI, iBond_ABI } from "../web3";
 import { formatNumber } from "../utils/format";
-import { tokenAddresses } from "../web3";
 
 const RedeemShares = ({ contract, account, web3, chainId, contractSymbol, onTransactionSuccess }) => {
-  const [amount, setAmount] = useState("");
-  const [displayAmount, setDisplayAmount] = useState("");
-  const [redeemableAssets, setRedeemableAssets] = useState({
-    vPls: "0",
-    plsx: "0",
-    inc: "0",
-  });
-  const [userBalance, setUserBalance] = useState("0");
+  const [redeemAmount, setRedeemAmount] = useState("");
+  const [displayRedeemAmount, setDisplayRedeemAmount] = useState("");
+  const [redeemableValue, setRedeemableValue] = useState("0");
+  const [balance, setBalance] = useState("0");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const tokenDecimals = {
-    vPLS: 18,
-    PLSX: 18,
-    INC: 18,
-  };
-
-  const tokenConfig = {
+  const tokens = {
+    PLStr: { symbol: "vPLS", address: tokenAddresses[369].vPLS, redeemMethod: "redeemPLStr" },
     xBond: { symbol: "PLSX", address: tokenAddresses[369].PLSX, redeemMethod: "redeemShares" },
     iBond: { symbol: "INC", address: tokenAddresses[369].INC, redeemMethod: "redeemShares" },
-    PLSTR: { symbol: "vPLS", address: tokenAddresses[369].vPLS, redeemMethod: "redeemPLSTR" },
   };
 
-  const isPLSTR = contractSymbol === "PLSTR";
-  const token = tokenConfig[contractSymbol];
-
-  // Null checks for props
-  if (!web3 || !contract || !account || !chainId || !contractSymbol || !token) {
-    console.warn("RedeemShares: Missing required props or invalid token config", {
-      web3,
-      contract,
-      account,
-      chainId,
-      contractSymbol,
-      token,
-    });
-    return <div className="text-gray-600 p-6">Loading contract data...</div>;
-  }
-
-  const fromUnits = (balance, decimals) => {
+  const fromUnits = (balance) => {
     try {
       if (!balance || balance === "0") return "0";
       return web3.utils.fromWei(balance.toString(), "ether");
     } catch (err) {
-      console.error("Error converting balance:", { balance, decimals, error: err.message });
+      console.error("Error converting balance:", { balance, error: err.message });
       return "0";
     }
   };
 
-  // Format input value with commas and preserve decimals
-  const formatInputValue = (value) => {
-    if (!value) return "";
-    const [intPart, decPart] = value.replace(/,/g, "").split(".");
-    // Avoid formatting '0' as '0,', show empty string if cleared
-    if (intPart === undefined || intPart === "") return decPart !== undefined ? `.${decPart}` : "";
-    const formattedInt = new Intl.NumberFormat("en-US").format(Number(intPart));
-    return decPart !== undefined ? `${formattedInt}.${decPart}` : (intPart ? formattedInt : "");
+  const toTokenUnits = (amount) => {
+    try {
+      if (!amount || Number(amount) <= 0) return "0";
+      return web3.utils.toWei(amount, "ether");
+    } catch (err) {
+      console.error("Error converting amount to token units:", { amount, error: err.message });
+      return "0";
+    }
   };
 
-  const handleAmountChange = (e) => {
+  const formatInputValue = (value) => {
+    if (!value) return "";
+    const num = Number(value.replace(/,/g, ""));
+    if (isNaN(num)) return value;
+    return new Intl.NumberFormat("en-US", {
+      maximumFractionDigits: 18,
+      minimumFractionDigits: 0,
+    }).format(num);
+  };
+
+  const handleRedeemAmountChange = (e) => {
     const rawValue = e.target.value.replace(/,/g, "");
     if (rawValue === "" || /^[0-9]*\.?[0-9]*$/.test(rawValue)) {
-      setAmount(rawValue);
-      setDisplayAmount(formatInputValue(rawValue));
+      setRedeemAmount(rawValue);
+      setDisplayRedeemAmount(formatInputValue(rawValue));
     }
   };
 
   const fetchUserData = async () => {
+    if (!web3 || !contract || !account || chainId !== 369) return;
     try {
       const balance = await contract.methods.balanceOf(account).call();
-      setUserBalance(fromUnits(balance, 18));
-    } catch (err) {
-      setError(`Failed to load balance: ${err.message}`);
-      console.error("Error fetching user balance:", err);
-    }
-  };
+      let backingTokenBalance, totalSupply;
 
-  const fetchRedeemableAssets = async () => {
-    if (!amount || Number(amount) <= 0) {
-      setRedeemableAssets({ vPls: "0", plsx: "0", inc: "0" });
-      return;
-    }
-    try {
-      const shareAmount = web3.utils.toWei(amount, "ether");
-      const metrics = await contract.methods.getContractMetrics().call();
-      const contractTotalSupply = metrics[0]; // totalSupply
-      const tokenBalance = metrics[1]; // plsxBalance, incBalance, or vPlsBalance
-      let redeemableAmount = "0";
-
-      if (BigInt(contractTotalSupply) !== BigInt(0) && BigInt(tokenBalance) !== BigInt(0)) {
-        redeemableAmount = (BigInt(tokenBalance) * BigInt(shareAmount)) / BigInt(contractTotalSupply);
+      if (contractSymbol === "PLStr") {
+        const metrics = await contract.methods.getBasicMetrics().call();
+        const { contractTotalSupply, vPlsBalance } = Array.isArray(metrics)
+          ? { contractTotalSupply: metrics[0], vPlsBalance: metrics[1] }
+          : metrics;
+        totalSupply = contractTotalSupply;
+        backingTokenBalance = vPlsBalance;
+      } else if (contractSymbol === "xBond") {
+        try {
+          const metrics = await contract.methods.getContractMetrics().call();
+          const { contractTotalSupply, plsxBalance } = Array.isArray(metrics)
+            ? { contractTotalSupply: metrics[0], plsxBalance: metrics[1] }
+            : metrics;
+          totalSupply = contractTotalSupply;
+          backingTokenBalance = plsxBalance;
+        } catch (err) {
+          console.warn("getContractMetrics failed for xBond, using balanceOf:", err.message);
+          const plsxContract = new web3.eth.Contract(plsxABI, tokenAddresses[369].PLSX);
+          backingTokenBalance = await plsxContract.methods.balanceOf(contractAddresses[369].xBond).call();
+          totalSupply = await contract.methods.totalSupply().call();
+        }
+      } else if (contractSymbol === "iBond") {
+        try {
+          const metrics = await contract.methods.getContractMetrics().call();
+          const { contractTotalSupply, incBalance } = Array.isArray(metrics)
+            ? { contractTotalSupply: metrics[0], incBalance: metrics[1] }
+            : metrics;
+          totalSupply = contractTotalSupply;
+          backingTokenBalance = incBalance;
+        } catch (err) {
+          console.warn("getContractMetrics failed for iBond, using balanceOf:", err.message);
+          const incContract = new web3.eth.Contract(incABI, tokenAddresses[369].INC);
+          backingTokenBalance = await incContract.methods.balanceOf(contractAddresses[369].iBond).call();
+          totalSupply = await contract.methods.totalSupply().call();
+        }
       }
 
-      setRedeemableAssets({
-        vPls: isPLSTR ? fromUnits(redeemableAmount, tokenDecimals.vPLS) : "0",
-        plsx: contractSymbol === "xBond" ? fromUnits(redeemableAmount, tokenDecimals.PLSX) : "0",
-        inc: contractSymbol === "iBond" ? fromUnits(redeemableAmount, tokenDecimals.INC) : "0",
-      });
+      let redeemable = "0";
+      if (Number(totalSupply) > 0) {
+        redeemable = (BigInt(balance) * BigInt(backingTokenBalance)) / BigInt(totalSupply);
+      }
+
+      setBalance(fromUnits(balance));
+      setRedeemableValue(fromUnits(redeemable));
     } catch (err) {
-      setError(`Failed to load redeemable assets: ${err.message}`);
-      console.error("Error fetching redeemable assets:", err);
+      console.error("Error fetching redeem data:", {
+        error: err.message,
+        contractSymbol,
+        contractAddress: contract.options.address,
+      });
+      setError("Failed to load redeem data");
     }
   };
 
   useEffect(() => {
-    if (web3 && contract && account && chainId === 369) fetchUserData();
+    if (web3 && contract && account && chainId === 369) {
+      fetchUserData();
+    }
   }, [web3, contract, account, chainId, contractSymbol]);
 
-  useEffect(() => {
-    if (web3 && contract && amount && chainId === 369) fetchRedeemableAssets();
-  }, [amount, web3, contract, chainId, contractSymbol]);
-
-  const handleRedeemShares = async () => {
-    if (!amount || Number(amount) <= 0 || Number(amount) > Number(userBalance)) {
-      setError("Please enter a valid amount within your balance");
+  const handleRedeem = async () => {
+    if (!redeemAmount || Number(redeemAmount) <= 0 || Number(redeemAmount) > Number(balance)) {
+      setError(`Please enter a valid ${contractSymbol} amount within your balance`);
       return;
     }
     setLoading(true);
     setError("");
     try {
-      const shareAmount = web3.utils.toWei(amount, "ether");
-      await contract.methods[token.redeemMethod](shareAmount).send({ from: account });
-      const redemptionMessage = `Successfully redeemed ${amount} ${contractSymbol} for ${formatNumber(
-        redeemableAssets[token.symbol.toLowerCase()]
-      )} ${token.symbol}!`;
-      alert(redemptionMessage);
-      setAmount("");
-      setDisplayAmount("");
-      setRedeemableAssets({ vPls: "0", plsx: "0", inc: "0" });
-      fetchUserData();
+      const tokenAmount = toTokenUnits(redeemAmount);
+      if (tokenAmount === "0") throw new Error("Invalid token amount");
+      await contract.methods[tokens[contractSymbol].redeemMethod](tokenAmount).send({ from: account });
+      alert(`Successfully redeemed ${redeemAmount} ${contractSymbol} for ${tokens[contractSymbol].symbol}!`);
+      setRedeemAmount("");
+      setDisplayRedeemAmount("");
+      await fetchUserData();
       if (onTransactionSuccess) {
         onTransactionSuccess();
       }
     } catch (err) {
-      setError(`Error redeeming shares: ${err.message}`);
-      console.error("Redeem shares error:", err);
+      setError(`Error redeeming ${contractSymbol}: ${err.message}`);
+      console.error("Redeem error:", err);
     } finally {
       setLoading(false);
     }
   };
 
   if (chainId !== 369) {
-    console.log("RedeemShares: Invalid chainId", { chainId });
-    return <div className="text-gray-600 p-6">Please connect to PulseChain</div>;
+    return (
+      <div className="bg-white bg-opacity-90 shadow-lg rounded-lg p-6 card">
+        <p className="text-[#8B0000]">Please connect to PulseChain (chain ID 369)</p>
+      </div>
+    );
   }
 
   return (
     <div className="bg-white bg-opacity-90 shadow-lg rounded-lg p-6 card">
-      <h2 className="text-xl font-semibold mb-4 text-[#4B0082]">Redeem {contractSymbol}</h2>
+      <h2 className="text-xl font-semibold mb-4 text-[#4B0082]">
+        Redeem {contractSymbol} for {tokens[contractSymbol]?.symbol}
+      </h2>
       <p className="text-gray-600 mb-2">
-        Your {contractSymbol} Balance: <span className="text-[#4B0082]">{formatNumber(userBalance)} {contractSymbol}</span>
+        {contractSymbol} Balance: <span className="text-[#4B0082]">{formatNumber(balance)} {contractSymbol}</span>
+      </p>
+      <p className="text-gray-600 mb-2">
+        Redeemable Value: <span className="text-[#4B0082]">{formatNumber(redeemableValue)} {tokens[contractSymbol]?.symbol}</span>
       </p>
       <div className="mb-4">
         <label className="text-gray-600">Amount ({contractSymbol})</label>
         <input
           type="text"
-          value={displayAmount}
-          onChange={handleAmountChange}
+          value={displayRedeemAmount}
+          onChange={handleRedeemAmountChange}
           placeholder={`Enter ${contractSymbol} amount`}
           className="w-full p-2 border rounded-lg"
           disabled={loading}
         />
-        <p className="text-gray-600 mt-2">
-          Redeemable {token.symbol}:{" "}
-          <span className="text-[#4B0082]">{formatNumber(redeemableAssets[token.symbol.toLowerCase()])} {token.symbol}</span>
-        </p>
       </div>
       <button
-        onClick={handleRedeemShares}
-        disabled={loading || !amount || Number(amount) <= 0 || Number(amount) > Number(userBalance)}
-        className="btn-primary"
+        onClick={handleRedeem}
+        disabled={loading || !redeemAmount || Number(redeemAmount) <= 0}
+        className="btn-primary mb-4"
       >
-        {loading ? "Processing..." : "Redeem"}
+        {loading ? "Processing..." : `Redeem ${contractSymbol}`}
       </button>
       {error && <p className="text-[#8B0000] mt-2">{error}</p>}
     </div>
