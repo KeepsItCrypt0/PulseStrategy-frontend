@@ -6,6 +6,8 @@ const ClaimPLStr = ({ contract, account, web3, chainId, contractSymbol, onTransa
   const [pendingPLStr, setPendingPLStr] = useState("0");
   const [xBondBalance, setXBondBalance] = useState("0");
   const [iBondBalance, setIBondBalance] = useState("0");
+  const [xBondPlsxLPBalance, setXBondPlsxLPBalance] = useState("0"); // Added
+  const [iBondIncLPBalance, setIBondIncLPBalance] = useState("0"); // Added
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -18,26 +20,56 @@ const ClaimPLStr = ({ contract, account, web3, chainId, contractSymbol, onTransa
       const result = await contract.methods.getClaimEligibility(account).call();
       console.log("getClaimEligibility raw result:", { result, type: typeof result, account, contractAddress: contract.options.address });
 
-      let claimablePLStr, xBondBal, iBondBal;
-      if (Array.isArray(result) && result.length >= 3) {
-        [claimablePLStr, xBondBal, iBondBal] = result;
-        console.log("getClaimEligibility parsed as array:", { claimablePLStr, xBondBal, iBondBal });
+      let claimablePLStr, xBondBal, iBondBal, xBondPlsxLPBal, iBondIncLPBal;
+      if (Array.isArray(result) && result.length >= 5) {
+        [claimablePLStr, xBondBal, iBondBal, xBondPlsxLPBal, iBondIncLPBal] = result;
+        console.log("getClaimEligibility parsed as array:", {
+          claimablePLStr,
+          xBondBal,
+          iBondBal,
+          xBondPlsxLPBal,
+          iBondIncLPBal,
+        });
       } else if (typeof result === "object" && result !== null) {
         claimablePLStr = result.claimablePLStr || result[0] || "0";
         xBondBal = result.xBondBalance || result[1] || "0";
         iBondBal = result.iBondBalance || result[2] || "0";
-        console.log("getClaimEligibility parsed as object:", { claimablePLStr, xBondBal, iBondBal });
+        xBondPlsxLPBal = result.xBondPlsxLPBalance || result[3] || "0";
+        iBondIncLPBal = result.iBondIncLPBalance || result[4] || "0";
+        console.log("getClaimEligibility parsed as object:", {
+          claimablePLStr,
+          xBondBal,
+          iBondBal,
+          xBondPlsxLPBal,
+          iBondIncLPBal,
+        });
       } else {
         throw new Error("Unexpected getClaimEligibility result format");
       }
 
-      if (isNaN(Number(claimablePLStr)) || isNaN(Number(xBondBal)) || isNaN(Number(iBondBal))) {
-        throw new Error(`Invalid number format: ${JSON.stringify({ claimablePLStr, xBondBal, iBondBal })}`);
+      if (
+        isNaN(Number(claimablePLStr)) ||
+        isNaN(Number(xBondBal)) ||
+        isNaN(Number(iBondBal)) ||
+        isNaN(Number(xBondPlsxLPBal)) ||
+        isNaN(Number(iBondIncLPBal))
+      ) {
+        throw new Error(
+          `Invalid number format: ${JSON.stringify({
+            claimablePLStr,
+            xBondBal,
+            iBondBal,
+            xBondPlsxLPBal,
+            iBondIncLPBal,
+          })}`
+        );
       }
 
       setPendingPLStr(web3.utils.fromWei(claimablePLStr.toString(), "ether"));
       setXBondBalance(web3.utils.fromWei(xBondBal.toString(), "ether"));
       setIBondBalance(web3.utils.fromWei(iBondBal.toString(), "ether"));
+      setXBondPlsxLPBalance(web3.utils.fromWei(xBondPlsxLPBal.toString(), "ether"));
+      setIBondIncLPBalance(web3.utils.fromWei(iBondIncLPBal.toString(), "ether"));
     } catch (err) {
       console.error("Error fetching claimable PLStr:", {
         error: err.message,
@@ -48,6 +80,8 @@ const ClaimPLStr = ({ contract, account, web3, chainId, contractSymbol, onTransa
       setPendingPLStr("0");
       setXBondBalance("0");
       setIBondBalance("0");
+      setXBondPlsxLPBalance("0");
+      setIBondIncLPBalance("0");
     }
   };
 
@@ -96,6 +130,12 @@ const ClaimPLStr = ({ contract, account, web3, chainId, contractSymbol, onTransa
       </p>
       <p className="text-gray-500 mb-2">
         iBond Balance: <span className="text-[#4B0082]">{formatNumber(iBondBalance)} iBond</span>
+      </p>
+      <p className="text-gray-500 mb-2">
+        xBond/PLSX LP Balance: <span className="text-[#4B0082]">{formatNumber(xBondPlsxLPBalance)} xBond/PLSX LP</span>
+      </p>
+      <p className="text-gray-500 mb-2">
+        iBond/INC LP Balance: <span className="text-[#4B0082]">{formatNumber(iBondIncLPBalance)} iBond/INC LP</span>
       </p>
       <button
         onClick={handleClaim}
