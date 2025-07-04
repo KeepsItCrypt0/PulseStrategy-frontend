@@ -3778,7 +3778,7 @@ export const networkConfigs = {
     chainName: "PulseChain",
     rpcUrls: ["https://rpc.pulsechain.com"],
     nativeCurrency: { name: "Pulse", symbol: "PLS", decimals: 18 },
-    blockExplorerUrls: ["https://kekxplorer.avecdra.pro"],
+    blockExplorerUrls: ["https://ipfs.scan.pulsechain.com"],
   },
 };
 
