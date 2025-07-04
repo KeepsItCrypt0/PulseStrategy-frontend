@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import ConnectWallet from "./components/ConnectWallet";
 import ContractInfo from "./components/ContractInfo";
 import UserInfo from "./components/UserInfo";
@@ -25,6 +25,8 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showFrontPage, setShowFrontPage] = useState(true);
+  const mountedRef = useRef(true);
+  const lastInitRef = useRef(0); // Timestamp for last initialization
 
   const contractABIs = {
     PLStr: PLStr_ABI,
@@ -39,28 +41,38 @@ const App = () => {
   }, [contractSymbol]);
 
   const initializeApp = useCallback(async (newContractSymbol = contractSymbol) => {
+    // Prevent initialization if called within 2 seconds
+    const now = Date.now();
+    if (now - lastInitRef.current < 2000) {
+      console.log("Initialization throttled to prevent flickering");
+      return;
+    }
+    lastInitRef.current = now;
+
+    if (!mountedRef.current) return; // Prevent updates if unmounted
+
     setLoading(true);
     setError("");
     setContract(null);
-    setWeb3(null); // Reset Web3 to ensure fresh connection
-    setAccount(null); // Reset account to avoid stale data
-    setChainId(null); // Reset chainId to avoid stale network
+    // Only reset web3/account/chainId if necessary
     try {
-      const web3Instance = await Promise.race([
-        getWeb3(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error("Web3 provider timeout")), 10000)),
-      ]);
+      let web3Instance = web3;
       if (!web3Instance) {
-        throw new Error("Failed to initialize Web3. Please connect your wallet.");
+        web3Instance = await Promise.race([
+          getWeb3(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Web3 provider timeout")), 10000)),
+        ]);
+        if (!web3Instance) {
+          throw new Error("Failed to initialize Web3. Please connect your wallet.");
+        }
+        setWeb3(web3Instance);
       }
-      setWeb3(web3Instance);
 
       const chainId = Number(await web3Instance.eth.getChainId());
-      setChainId(chainId);
-
       if (chainId !== 369) {
         throw new Error("Please connect to PulseChain (chainId 369).");
       }
+      setChainId(chainId);
 
       const account = await getAccount(web3Instance);
       if (!account) {
@@ -91,9 +103,11 @@ const App = () => {
       });
       setError(`Initialization failed: ${error.message || "Unknown error"}`);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
     }
-  }, [contractSymbol, contractABIs]);
+  }, [web3, contractSymbol, contractABIs]);
 
   const onTransactionSuccess = () => {
     console.log("Transaction successful, reinitializing app...");
@@ -115,6 +129,7 @@ const App = () => {
   }, 500), [initializeApp]);
 
   useEffect(() => {
+    mountedRef.current = true;
     if (!showFrontPage) {
       initializeApp();
     }
@@ -134,10 +149,15 @@ const App = () => {
       window.ethereum.on("accountsChanged", handleAccountsChanged);
 
       return () => {
+        mountedRef.current = false;
         window.ethereum.removeListener("chainChanged", handleChainChanged);
         window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
       };
     }
+
+    return () => {
+      mountedRef.current = false;
+    };
   }, [showFrontPage, initializeApp]);
 
   const handleEnterApp = () => {
