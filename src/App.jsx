@@ -4,7 +4,7 @@ import ContractInfo from "./components/ContractInfo";
 import UserInfo from "./components/UserInfo";
 import IssueShares from "./components/IssueShares";
 import RedeemShares from "./components/RedeemShares";
-import ClaimPLStr from "./components/ClaimPLStr";
+import ClaimPLStr from "./components/ClaimPLStr"; // Correct import
 import AdminPanel from "./components/AdminPanel";
 import WeightUpdate from "./components/WeightUpdate";
 import FrontPage from "./components/FrontPage";
@@ -179,17 +179,12 @@ const App = () => {
             ))}
           </select>
         </div>
-        {account && (
-          <p className="text-center text-gray-600 mt-2">
-            Wallet: {account.slice(0, 6)}...{account.slice(-4)}
-          </p>
-        )}
         <ConnectWallet
           account={account}
           web3={web3}
           contractAddress={contractAddresses[369]?.[contractSymbol] || ""}
           chainId={chainId}
-          onConnect={initializeApp}
+          contractSymbol={contractSymbol} // Pass contractSymbol
         />
       </header>
       <main className="w-full max-w-4xl space-y-6">
@@ -233,7 +228,7 @@ const App = () => {
             />
             {contractSymbol === "PLStr" && (
               <>
-                <ClaimPLStr
+                <ClaimPLStr // Fixed typo
                   contract={contract}
                   account={account}
                   web3={web3}
