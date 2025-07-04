@@ -10,6 +10,8 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
   const [error, setError] = useState("");
   const [isIssuanceActive, setIsIssuanceActive] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0);
+  const [allowance, setAllowance] = useState("0");
+  const [originAddress, setOriginAddress] = useState("");
 
   // Null checks for props
   if (!web3 || !contract || !account || !chainId || !contractSymbol) {
@@ -28,6 +30,13 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
   if (!tokens.length || contractSymbol === "PLStr") {
     console.error("IssueShares: Invalid token config or PLStr not supported", { contractSymbol });
     return <div className="text-red-600 p-6">Error: Invalid contract configuration</div>;
+  }
+
+  // Verify token address matches contract's PLSX address
+  const contractPlsxAddress = "0x95B303987A60C71504D99Aa1b13B4DA07b0790ab";
+  if (tokens[0].address.toLowerCase() !== contractPlsxAddress.toLowerCase()) {
+    console.error("Token address mismatch", { expected: contractPlsxAddress, actual: tokens[0].address });
+    return <div className="text-red-600 p-6">Error: Token address mismatch</div>;
   }
 
   const fromUnits = (balance) => {
@@ -66,19 +75,22 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
     }
   };
 
-  const fetchTokenBalance = async () => {
+  const fetchTokenBalanceAndAllowance = async () => {
     try {
       const token = tokens[0];
       const tokenContract = new web3.eth.Contract(token.abi, token.address);
       const balance = await tokenContract.methods.balanceOf(account).call();
+      const allowance = await tokenContract.methods.allowance(account, contractAddresses[369][contractSymbol]).call();
       setTokenBalance(fromUnits(balance));
+      setAllowance(fromUnits(allowance));
+      console.log("Token balance:", fromUnits(balance), "Allowance:", fromUnits(allowance));
     } catch (err) {
-      setError(`Failed to load ${defaultToken} balance: ${err.message}`);
-      console.error("Fetch token balance error:", err);
+      setError(`Failed to load ${defaultToken} balance or allowance: ${err.message}`);
+      console.error("Fetch token balance/allowance error:", err);
     }
   };
 
-  const checkIssuanceStatus = async () => {
+  const checkIssuanceStatusAndOrigin = async () => {
     try {
       const { isActive, timeRemaining } = await contract.methods.getIssuanceStatus().call();
       setIsIssuanceActive(isActive);
@@ -87,16 +99,19 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
       if (!isActive) {
         setError("Issuance period has ended. No further shares can be issued.");
       }
+      const origin = await contract.methods._originAddress().call();
+      setOriginAddress(origin);
+      console.log("Origin address:", origin);
     } catch (err) {
-      console.error("Error checking issuance status:", err);
-      setError("Failed to check issuance status: " + err.message);
+      console.error("Error checking issuance status or origin address:", err);
+      setError("Failed to check issuance status or origin address: " + err.message);
     }
   };
 
   useEffect(() => {
     if (web3 && contract && account && chainId === 369) {
-      fetchTokenBalance();
-      checkIssuanceStatus();
+      fetchTokenBalanceAndAllowance();
+      checkIssuanceStatusAndOrigin();
     }
   }, [web3, contract, account, chainId, contractSymbol]);
 
@@ -127,34 +142,46 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
 
       const tokenContract = new web3.eth.Contract(token.abi, token.address);
       const contractAddress = contractAddresses[369][contractSymbol];
-      const allowance = await tokenContract.methods.allowance(account, contractAddress).call();
-      console.log("Allowance:", allowance.toString(), "Required:", tokenAmount);
 
-      if (BigInt(allowance) < BigInt(tokenAmount)) {
-        console.log("Estimating gas for approval...");
-        let gasEstimate;
-        try {
-          gasEstimate = await tokenContract.methods
-            .approve(contractAddress, tokenAmount)
-            .estimateGas({ from: account });
-          gasEstimate = Math.floor(gasEstimate * 1.2); // Add 20% buffer
-          console.log("Approval gas estimate:", gasEstimate);
-        } catch (err) {
-          console.error("Gas estimation for approval failed:", err);
-          throw new Error(`Failed to estimate gas for approval: ${err.message}`);
-        }
-
-        console.log("Approving token spend...");
-        await tokenContract.methods.approve(contractAddress, tokenAmount).send({
-          from: account,
-          gas: gasEstimate,
-          maxPriorityFeePerGas: web3.utils.toWei("2", "gwei"), // 2 beats
-          maxFeePerGas: web3.utils.toWei("7000000", "gwei"), // 7,000,000 beats (~0.007 PLS)
-        });
-        console.log("Approval successful");
+      // Force approval for debugging
+      console.log("Estimating gas for approval...");
+      let gasEstimate;
+      try {
+        gasEstimate = await tokenContract.methods
+          .approve(contractAddress, tokenAmount)
+          .estimateGas({ from: account });
+        gasEstimate = Math.floor(gasEstimate * 1.2); // Add 20% buffer
+        console.log("Approval gas estimate:", gasEstimate);
+      } catch (err) {
+        console.error("Gas estimation for approval failed:", err);
+        throw new Error(`Failed to estimate gas for approval: ${err.message}`);
       }
 
+      console.log("Approving token spend...");
+      await tokenContract.methods.approve(contractAddress, tokenAmount).send({
+        from: account,
+        gas: gasEstimate,
+        maxPriorityFeePerGas: web3.utils.toWei("2", "gwei"), // 2 beats
+        maxFeePerGas: web3.utils.toWei("7000000", "gwei"), // 7,000,000 beats
+      });
+      console.log("Approval successful");
+
+      // Update allowance after approval
+      const allowance = await tokenContract.methods.allowance(account, contractAddress).call();
+      setAllowance(fromUnits(allowance));
+      console.log("Updated allowance:", fromUnits(allowance));
+
+      // Simulate issueShares to catch revert reason
       console.log("Simulating issueShares...");
+      try {
+        await contract.methods.issueShares(tokenAmount).call({ from: account });
+        console.log("issueShares simulation successful");
+      } catch (err) {
+        console.error("issueShares simulation failed:", err);
+        throw new Error(`issueShares simulation failed: ${err.message}`);
+      }
+
+      console.log("Estimating gas for issueShares...");
       let issueGasEstimate;
       try {
         issueGasEstimate = await contract.methods
@@ -178,7 +205,7 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
       alert(`Successfully issued ${contractSymbol} shares with ${amount} ${token.symbol}!`);
       setAmount("");
       setDisplayAmount("");
-      fetchTokenBalance();
+      fetchTokenBalanceAndAllowance();
       if (onTransactionSuccess) {
         onTransactionSuccess();
       }
@@ -200,9 +227,15 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
         {defaultToken} Balance: <span className="text-[#4B0082]">{formatNumber(tokenBalance)} {defaultToken}</span>
       </p>
       <p className="text-gray-600 mb-2">
+        Allowance: <span className="text-[#4B0082]">{formatNumber(allowance)} {defaultToken}</span>
+      </p>
+      <p className="text-gray-600 mb-2">
         Issuance Status: <span className={isIssuanceActive ? "text-green-600" : "text-red-600"}>
           {isIssuanceActive ? `Active (${Math.floor(timeRemaining / 86400)} days remaining)` : "Ended"}
         </span>
+      </p>
+      <p className="text-gray-600 mb-2">
+        Origin Address: <span className="text-[#4B0082]">{originAddress}</span>
       </p>
       <div className="mb-4">
         <label className="text-gray-600">Token</label>
