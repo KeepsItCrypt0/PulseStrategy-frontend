@@ -3,7 +3,6 @@ import { tokenAddresses, vPLS_ABI } from "../web3";
 import { formatNumber } from "../utils/format";
 
 const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsController, onTransactionSuccess }) => {
-  const [pairAddress, setPairAddress] = useState("");
   const [depositAmount, setDepositAmount] = useState("");
   const [displayDepositAmount, setDisplayDepositAmount] = useState("");
   const [vPlsBalance, setVPlsBalance] = useState("0");
@@ -101,28 +100,6 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsCon
     }
   };
 
-  const handleSetPairAddress = async () => {
-    if (!pairAddress || !web3.utils.isAddress(pairAddress)) {
-      setError("Please enter a valid pair address");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    try {
-      await contract.methods.setPairAddress(pairAddress).send({ from: account });
-      alert("Pair address set successfully!");
-      setPairAddress("");
-      if (onTransactionSuccess) {
-        onTransactionSuccess();
-      }
-    } catch (err) {
-      setError(`Error setting pair address: ${err.message}`);
-      console.error("Set pair address error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleDepositTokens = async () => {
     if (contractSymbol !== "PLSTR") return;
     if (!depositAmount || Number(depositAmount) <= 0 || Number(depositAmount) > Number(vPlsBalance)) {
@@ -159,28 +136,6 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsCon
   return (
     <div className="bg-white bg-opacity-90 shadow-lg rounded-lg p-6 card">
       <h2 className="text-xl font-semibold mb-4 text-[#4B0082]">Admin Panel - {contractSymbol}</h2>
-      {contractSymbol !== "PLSTR" && (
-        <>
-          <h3 className="text-lg font-medium mb-2">Set Pair Address</h3>
-          <div className="mb-4">
-            <input
-              type="text"
-              value={pairAddress}
-              onChange={(e) => setPairAddress(e.target.value)}
-              placeholder="Enter pair address"
-              className="w-full p-2 border rounded-lg"
-              disabled={loading}
-            />
-          </div>
-          <button
-            onClick={handleSetPairAddress}
-            disabled={loading || !pairAddress || !web3.utils.isAddress(pairAddress)}
-            className="btn-primary mb-4"
-          >
-            {loading ? "Processing..." : "Set Pair Address"}
-          </button>
-        </>
-      )}
       {contractSymbol === "PLSTR" && (
         <>
           <h3 className="text-lg font-medium mb-2">Deposit vPLS</h3>
