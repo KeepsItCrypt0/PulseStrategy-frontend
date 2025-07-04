@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { formatNumber } from "../utils/format";
-import { tokenAddresses, vPLS_ABI } from "../web3";
+import { tokenAddresses } from "../web3";
 
 const RedeemShares = ({ contract, account, web3, chainId, contractSymbol, onTransactionSuccess }) => {
   const [amount, setAmount] = useState("");
@@ -11,7 +11,6 @@ const RedeemShares = ({ contract, account, web3, chainId, contractSymbol, onTran
     inc: "0",
   });
   const [userBalance, setUserBalance] = useState("0");
-  const [userTokenBalance, setUserTokenBalance] = useState("0"); // New state for vPLS/PLSX/INC balance
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -57,6 +56,7 @@ const RedeemShares = ({ contract, account, web3, chainId, contractSymbol, onTran
   const formatInputValue = (value) => {
     if (!value) return "";
     const [intPart, decPart] = value.replace(/,/g, "").split(".");
+    // Avoid formatting '0' as '0,', show empty string if cleared
     if (intPart === undefined || intPart === "") return decPart !== undefined ? `.${decPart}` : "";
     const formattedInt = new Intl.NumberFormat("en-US").format(Number(intPart));
     return decPart !== undefined ? `${formattedInt}.${decPart}` : (intPart ? formattedInt : "");
@@ -72,14 +72,8 @@ const RedeemShares = ({ contract, account, web3, chainId, contractSymbol, onTran
 
   const fetchUserData = async () => {
     try {
-      // Fetch contract balance (PLSTR, xBond, or iBond shares)
       const balance = await contract.methods.balanceOf(account).call();
       setUserBalance(fromUnits(balance, 18));
-
-      // Fetch token balance (vPLS, PLSX, or INC)
-      const tokenContract = new web3.eth.Contract(vPLS_ABI, token.address);
-      const tokenBalance = await tokenContract.methods.balanceOf(account).call();
-      setUserTokenBalance(fromUnits(tokenBalance, tokenDecimals[token.symbol]));
     } catch (err) {
       setError(`Failed to load balance: ${err.message}`);
       console.error("Error fetching user balance:", err);
@@ -160,9 +154,6 @@ const RedeemShares = ({ contract, account, web3, chainId, contractSymbol, onTran
       <h2 className="text-xl font-semibold mb-4 text-[#4B0082]">Redeem {contractSymbol}</h2>
       <p className="text-gray-600 mb-2">
         Your {contractSymbol} Balance: <span className="text-[#4B0082]">{formatNumber(userBalance)} {contractSymbol}</span>
-      </p>
-      <p className="text-gray-600 mb-2">
-        Your {token.symbol} Balance: <span className="text-[#4B0082]">{formatNumber(userTokenBalance)} {token.symbol}</span>
       </p>
       <div className="mb-4">
         <label className="text-gray-600">Amount ({contractSymbol})</label>
