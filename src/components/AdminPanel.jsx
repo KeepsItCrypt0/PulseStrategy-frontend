@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { tokenAddresses, vPLS_ABI } from "../web3";
+import { tokenAddresses, vPLS_ABI, PLStr_ABI } from "../web3"; // Added PLStr_ABI
 import { formatNumber } from "../utils/format";
 
 const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsController, onTransactionSuccess }) => {
@@ -38,7 +38,7 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsCon
     }
   };
 
-  // Fetch vPLS balance for PLSTR
+  // Fetch vPLS balance for PLStr
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -50,7 +50,7 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsCon
           contractAddress: contract.options.address,
         });
 
-        if (contractSymbol === "PLSTR") {
+        if (contractSymbol === "PLStr") {
           const vPlsContract = new web3.eth.Contract(vPLS_ABI, tokenAddresses[369].vPLS);
           const balance = await vPlsContract.methods.balanceOf(account).call();
           setVPlsBalance(fromUnits(balance));
@@ -101,7 +101,7 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsCon
   };
 
   const handleDepositTokens = async () => {
-    if (contractSymbol !== "PLSTR") return;
+    if (contractSymbol !== "PLStr") return;
     if (!depositAmount || Number(depositAmount) <= 0 || Number(depositAmount) > Number(vPlsBalance)) {
       setError("Please enter a valid vPLS amount within your balance");
       return;
@@ -136,7 +136,7 @@ const AdminPanel = ({ contract, account, web3, chainId, contractSymbol, appIsCon
   return (
     <div className="bg-white bg-opacity-90 shadow-lg rounded-lg p-6 card">
       <h2 className="text-xl font-semibold mb-4 text-[#4B0082]">Admin Panel - {contractSymbol}</h2>
-      {contractSymbol === "PLSTR" && (
+      {contractSymbol === "PLStr" && (
         <>
           <h3 className="text-lg font-medium mb-2">Deposit vPLS</h3>
           <p className="text-gray-600 mb-2">
