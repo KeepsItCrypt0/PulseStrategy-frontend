@@ -268,7 +268,7 @@ const App = () => {
       <footer className="mt-16 w-full text-center text-gray-500 text-xs">
         <div className="mb-1">
           <a
-            href="https://github.com/KeepsItCrypt0/PulseStrategy"
+            href="https://github.com/PulseStrategy369/PulseStrategy"
             target="_blank"
             rel="noopener noreferrer"
             className="footer-link mx-1"
