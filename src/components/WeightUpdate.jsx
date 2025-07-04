@@ -24,14 +24,17 @@ const WeightUpdate = ({ contract, account, web3, chainId, onTransactionSuccess }
 
   // Format time remaining (seconds) to hours/minutes
   const formatTimeRemaining = (seconds) => {
-    if (seconds <= 0) return "0";
+    if (!seconds || seconds <= 0) return "Ready for update";
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     return `${hours} hour${hours !== 1 ? "s" : ""}, ${minutes} minute${minutes !== 1 ? "s" : ""}`;
   };
 
   const fetchWeightData = async () => {
-    if (!contract || !web3 || chainId !== 369) return;
+    if (!contract || !web3 || chainId !== 369) {
+      setError("Invalid contract or network");
+      return;
+    }
     try {
       const [currentWeight, lastUpdate] = await Promise.all([
         contract.methods.getCurrentWeight().call(),
@@ -39,6 +42,10 @@ const WeightUpdate = ({ contract, account, web3, chainId, onTransactionSuccess }
       ]);
 
       const lastUpdateTimestamp = Number(lastUpdate);
+      if (isNaN(lastUpdateTimestamp) || lastUpdateTimestamp < 0) {
+        throw new Error("Invalid last weight update timestamp");
+      }
+
       const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
       const timeSinceLastUpdate = currentTime - lastUpdateTimestamp;
       const timeUntilNextUpdate = Math.max(0, WEIGHT_COOLDOWN - timeSinceLastUpdate);
@@ -48,11 +55,17 @@ const WeightUpdate = ({ contract, account, web3, chainId, onTransactionSuccess }
         lastUpdate: lastUpdateTimestamp,
         timeUntilNextUpdate,
       });
+
+      console.log("Weight data fetched:", {
+        currentWeight: fromUnits(currentWeight),
+        lastUpdate: lastUpdateTimestamp,
+        timeUntilNextUpdate,
+      });
     } catch (err) {
       console.error("Error fetching weight data:", {
         error: err.message,
       });
-      setError("Failed to load weight data");
+      setError(`Failed to load weight data: ${err.message}`);
     }
   };
 
@@ -62,7 +75,8 @@ const WeightUpdate = ({ contract, account, web3, chainId, onTransactionSuccess }
     const interval = setInterval(() => {
       setWeightData((prev) => {
         const newTimeUntilNextUpdate = Math.max(0, prev.timeUntilNextUpdate - 60);
-        return { ...prev, timeUntilNextUpdate };
+        console.log("Interval update:", { newTimeUntilNextUpdate });
+        return { ...prev, timeUntilNextUpdate: newTimeUntilNextUpdate };
       });
     }, 60000);
     return () => clearInterval(interval);
@@ -75,7 +89,6 @@ const WeightUpdate = ({ contract, account, web3, chainId, onTransactionSuccess }
     try {
       await contract.methods.updateWeight().send({ from: account });
       alert("Bond weight updated successfully!");
-      // Refresh data
       await fetchWeightData();
       if (onTransactionSuccess) {
         onTransactionSuccess();
@@ -91,7 +104,10 @@ const WeightUpdate = ({ contract, account, web3, chainId, onTransactionSuccess }
     }
   };
 
-  if (chainId !== 369) return null;
+  if (chainId !== 369) {
+    console.log("WeightUpdate: Invalid chainId", { chainId });
+    return <div className="text-gray-600 p-6">Please connect to PulseChain</div>;
+  }
 
   return (
     <div className="bg-white bg-opacity-90 shadow-lg rounded-lg p-6 card">
@@ -108,7 +124,9 @@ const WeightUpdate = ({ contract, account, web3, chainId, onTransactionSuccess }
       <p className="text-gray-600">
         Next Update Available In:{" "}
         <span className="text-[#4B0082]">
-          {formatTimeRemaining(weightData.timeUntilNextUpdate)}
+          {weightData.timeUntilNextUpdate !== undefined
+            ? formatTimeRemaining(weightData.timeUntilNextUpdate)
+            : "Loading..."}
         </span>
       </p>
       <button
