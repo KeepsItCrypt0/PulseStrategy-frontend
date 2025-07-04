@@ -41,19 +41,19 @@ const FrontPage = ({ onEnterApp }) => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-semibold text-[#4B0082] mb-4">PLSTR Contract</h2>
+        <h2 className="text-2xl font-semibold text-[#4B0082] mb-4">PLStr Contract</h2>
         <ul className="list-disc list-inside text-gray-600 mb-8">
           <li className="mb-2">
             <strong>vPLS Deposits:</strong>
             <ul className="list-circle list-inside ml-4">
               <li>Anyone can deposit vPLS to grow the reward pool (minimum 100,000 vPLS).</li>
-              <li>No PLSTR is minted for depositors—it’s purely altruistic, fueling rewards for xBond/iBond/LP holders.</li>
+              <li>No PLStr is minted for depositors—it’s purely altruistic, fueling rewards for xBond/iBond/LP holders.</li>
             </ul>
           </li>
           <li className="mb-2">
             <strong>Reward Claims:</strong>
             <ul className="list-circle list-inside ml-4">
-              <li>Holders of xBond, iBond, or LP tokens can claim PLSTR.</li>
+              <li>Holders of xBond, iBond, or LP tokens can claim PLStr.</li>
               <li>Rewards are weighted by a formula that adjusts based on PLSX/INC ratios.</li>
               <li>LP providers get 2x rewards to incentivize liquidity.</li>
             </ul>
@@ -62,19 +62,19 @@ const FrontPage = ({ onEnterApp }) => {
             <strong>Reward Expiration:</strong>
             <ul className="list-circle list-inside ml-4">
               <li>Unclaimed rewards expire after 90 days, resetting the reward pool.</li>
-              <li>Expired rewards effectively burn PLSTR, increasing vPLS backing for claimed PLSTR.</li>
+              <li>Expired rewards effectively burn PLStr, increasing vPLS backing for claimed PLStr.</li>
             </ul>
           </li>
           <li className="mb-2">
             <strong>Transfers:</strong>
             <ul className="list-circle list-inside ml-4">
-              <li>0.5% of PLSTR transfers are burned (except for claims/redemptions).</li>
+              <li>0.5% of PLStr transfers are burned (except for claims/redemptions).</li>
             </ul>
           </li>
           <li>
             <strong>Redemption:</strong>
             <ul className="list-circle list-inside ml-4">
-              <li>Redeem PLSTR for a share of the vPLS reserve at any time.</li>
+              <li>Redeem PLStr for a share of the vPLS reserve at any time.</li>
             </ul>
           </li>
         </ul>
