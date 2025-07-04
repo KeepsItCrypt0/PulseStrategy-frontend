@@ -9,6 +9,8 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
     claimablePLStr: "0",
     xBondBalance: "0",
     iBondBalance: "0",
+    xBondPlsxLPBalance: "0", // Added
+    iBondIncLPBalance: "0", // Added
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -39,6 +41,8 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
         claimablePLStr: "0",
         xBondBalance: "0",
         iBondBalance: "0",
+        xBondPlsxLPBalance: "0", // Initialize
+        iBondIncLPBalance: "0", // Initialize
       };
 
       const tokenAddrs = tokenAddresses[369];
@@ -93,34 +97,64 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
       }
 
       if (contractSymbol === "PLStr") {
-        let claimablePLStr, xBondBalance, iBondBalance;
+        let claimablePLStr, xBondBalance, iBondBalance, xBondPlsxLPBalance, iBondIncLPBalance;
         try {
           const result = await contract.methods.getClaimEligibility(account).call();
           console.log("getClaimEligibility raw result:", { result, type: typeof result, account, contractAddress: contract.options.address });
 
-          if (Array.isArray(result) && result.length >= 3) {
-            [claimablePLStr, xBondBalance, iBondBalance] = result;
-            console.log("getClaimEligibility parsed as array:", { claimablePLStr, xBondBalance, iBondBalance });
+          if (Array.isArray(result) && result.length >= 5) {
+            [claimablePLStr, xBondBalance, iBondBalance, xBondPlsxLPBalance, iBondIncLPBalance] = result;
+            console.log("getClaimEligibility parsed as array:", {
+              claimablePLStr,
+              xBondBalance,
+              iBondBalance,
+              xBondPlsxLPBalance,
+              iBondIncLPBalance,
+            });
           } else if (typeof result === "object" && result !== null) {
             claimablePLStr = result.claimablePLStr || result[0] || "0";
             xBondBalance = result.xBondBalance || result[1] || "0";
             iBondBalance = result.iBondBalance || result[2] || "0";
-            console.log("getClaimEligibility parsed as object:", { claimablePLStr, xBondBalance, iBondBalance });
+            xBondPlsxLPBalance = result.xBondPlsxLPBalance || result[3] || "0";
+            iBondIncLPBalance = result.iBondIncLPBalance || result[4] || "0";
+            console.log("getClaimEligibility parsed as object:", {
+              claimablePLStr,
+              xBondBalance,
+              iBondBalance,
+              xBondPlsxLPBalance,
+              iBondIncLPBalance,
+            });
           } else {
             throw new Error("Unexpected getClaimEligibility result format");
           }
+
+          if (
+            isNaN(Number(claimablePLStr)) ||
+            isNaN(Number(xBondBalance)) ||
+            isNaN(Number(iBondBalance)) ||
+            isNaN(Number(xBondPlsxLPBalance)) ||
+            isNaN(Number(iBondIncLPBalance))
+          ) {
+            throw new Error(
+              `Invalid number format: ${JSON.stringify({
+                claimablePLStr,
+                xBondBalance,
+                iBondBalance,
+                xBondPlsxLPBalance,
+                iBondIncLPBalance,
+              })}`
+            );
+          }
+
+          data.claimablePLStr = fromUnits(claimablePLStr);
+          data.xBondBalance = fromUnits(xBondBalance);
+          data.iBondBalance = fromUnits(iBondBalance);
+          data.xBondPlsxLPBalance = fromUnits(xBondPlsxLPBalance);
+          data.iBondIncLPBalance = fromUnits(iBondIncLPBalance);
         } catch (err) {
           console.error("getClaimEligibility failed:", err.message);
           throw err;
         }
-
-        if (isNaN(Number(claimablePLStr)) || isNaN(Number(xBondBalance)) || isNaN(Number(iBondBalance))) {
-          throw new Error(`Invalid number format: ${JSON.stringify({ claimablePLStr, xBondBalance, iBondBalance })}`);
-        }
-
-        data.claimablePLStr = fromUnits(claimablePLStr);
-        data.xBondBalance = fromUnits(xBondBalance);
-        data.iBondBalance = fromUnits(iBondBalance);
       }
 
       setUserData({ ...data, redeemableTokenSymbol });
@@ -173,6 +207,12 @@ const UserInfo = ({ contract, account, web3, chainId, contractSymbol }) => {
               </p>
               <p className="text-gray-500">
                 iBond Balance: <span className="text-[#4B0082]">{formatNumber(userData.iBondBalance)} iBond</span>
+              </p>
+              <p className="text-gray-500">
+                xBond/PLSX LP Balance: <span className="text-[#4B0082]">{formatNumber(userData.xBondPlsxLPBalance)} xBond/PLSX LP</span>
+              </p>
+              <p className="text-gray-500">
+                iBond/INC LP Balance: <span className="text-[#4B0082]">{formatNumber(userData.iBondIncLPBalance)} iBond/INC LP</span>
               </p>
             </>
           )}
