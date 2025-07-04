@@ -4,7 +4,7 @@ import ContractInfo from "./components/ContractInfo";
 import UserInfo from "./components/UserInfo";
 import IssueShares from "./components/IssueShares";
 import RedeemShares from "./components/RedeemShares";
-import ClaimPLStr from "./components/ClaimPLStr"; // Correct import
+import ClaimPLStr from "./components/ClaimPLStr";
 import AdminPanel from "./components/AdminPanel";
 import WeightUpdate from "./components/WeightUpdate";
 import FrontPage from "./components/FrontPage";
@@ -164,27 +164,29 @@ const App = () => {
             ? `Interact with the ${contractSymbol} contract on PulseChain`
             : `Connect your wallet to interact with the contract`}
         </p>
-        <div className="mt-4">
-          <label className="text-gray-600 mr-2">Select Contract:</label>
-          <select
-            value={contractSymbol}
-            onChange={(e) => setContractSymbol(e.target.value)}
-            className="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
-            disabled={!web3 || chainId !== 369}
-          >
-            {["xBond", "iBond", "PLStr"].map((symbol) => (
-              <option key={symbol} value={symbol}>
-                {symbol}
-              </option>
-            ))}
-          </select>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <label className="text-gray-600 mr-2 self-center">Select Contract:</label>
+          {["xBond", "iBond", "PLStr"].map((symbol) => (
+            <button
+              key={symbol}
+              onClick={() => setContractSymbol(symbol)}
+              disabled={!web3 || chainId !== 369}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                contractSymbol === symbol
+                  ? "bg-purple-600 text-white"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+              } ${(!web3 || chainId !== 369) ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              {symbol}
+            </button>
+          ))}
         </div>
         <ConnectWallet
           account={account}
           web3={web3}
           contractAddress={contractAddresses[369]?.[contractSymbol] || ""}
           chainId={chainId}
-          contractSymbol={contractSymbol} // Pass contractSymbol
+          contractSymbol={contractSymbol}
         />
       </header>
       <main className="w-full max-w-4xl space-y-6">
@@ -228,7 +230,7 @@ const App = () => {
             />
             {contractSymbol === "PLStr" && (
               <>
-                <ClaimPLStr // Fixed typo
+                <ClaimPLStr
                   contract={contract}
                   account={account}
                   web3={web3}
