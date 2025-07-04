@@ -123,7 +123,7 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
   };
 
   const estimatedShares = amount ? (Number(amount) * 0.955).toFixed(6) : "0";
-  const feeAmount = amount ? (Number(amount) * 0.045).toFixed(6) : "0";
+  const feeAmount = amount ? (Number(amount) * 0.005).toFixed(6) : "0";
 
   return (
     <div className="bg-white bg-opacity-90 shadow-lg rounded-lg p-6 card">
@@ -151,10 +151,10 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
           disabled={loading}
         />
         <p className="text-gray-600 mt-2">
-          Estimated {contractSymbol} (after 4.5% fee): <span className="text-[#4B0082]">{formatNumber(estimatedShares)}</span>
+          Estimated {contractSymbol} (after 0.5% fee): <span className="text-[#4B0082]">{formatNumber(estimatedShares)}</span>
         </p>
         <p className="text-gray-600 mt-1">
-          Fee (4.5%): <span className="text-[#4B0082]">{formatNumber(feeAmount)} {defaultToken}</span>
+          Fee (0.5%): <span className="text-[#4B0082]">{formatNumber(feeAmount)} {defaultToken}</span>
         </p>
       </div>
       <button
