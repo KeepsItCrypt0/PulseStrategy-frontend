@@ -3,8 +3,8 @@ import Web3 from "web3";
 // Contract addresses
 export const contractAddresses = {
   369: {
-    iBond: "0x791afBffAb3DC293786827e2F4588aabd52a9270",
-    xBond: "0x252662c2d71fD5cF8FCE5B58CA1F95D3C9c00C2c",
+    iBond: "0xc087175be23F37DE50A94C36287feCC24a188993",
+    xBond: "0x2c858178F5D563Bb1B6C88e9ae58AF533cC8772e",
     PLSTR: "0x557DDecea197cCb2c5998Eb94CF17f707C2522AE",
   },
 };
