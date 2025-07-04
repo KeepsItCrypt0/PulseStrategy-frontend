@@ -38,16 +38,14 @@ const RedeemShares = ({ contract, account, web3, chainId, contractSymbol, onTran
 
   const formatInputValue = (value) => {
     if (!value) return "";
-    const num = Number(value.replace(/,/g, ""));
-    if (isNaN(num)) return value;
-    return new Intl.NumberFormat("en-US", {
-      maximumFractionDigits: 18,
-      minimumFractionDigits: 0,
-    }).format(num);
+    const [intPart, decPart] = value.replace(/,/g, "").split(".");
+    if (intPart === undefined || intPart === "") return decPart !== undefined ? `.${decPart}` : "";
+    const formattedInt = new Intl.NumberFormat("en-US").format(Number(intPart));
+    return decPart !== undefined ? `${formattedInt}.${decPart}` : (intPart ? formattedInt : "");
   };
 
   const handleRedeemAmountChange = (e) => {
-    const rawValue = e.target.value.replace(/,/g, "");
+    let rawValue = e.target.value.replace(/,/g, "");
     if (rawValue === "" || /^[0-9]*\.?[0-9]*$/.test(rawValue)) {
       setRedeemAmount(rawValue);
       setDisplayRedeemAmount(formatInputValue(rawValue));
@@ -55,17 +53,20 @@ const RedeemShares = ({ contract, account, web3, chainId, contractSymbol, onTran
   };
 
   const fetchUserData = async () => {
-    if (!web3 || !contract || !account || chainId !== 369) return;
+    if (!web3 || !contract || !account || chainId !== 369) {
+      console.warn("fetchUserData: Invalid inputs", { web3: !!web3, contract: !!contract, account, chainId, contractSymbol });
+      return;
+    }
     try {
       const balance = await contract.methods.balanceOf(account).call();
       let backingTokenBalance, totalSupply;
 
       if (contractSymbol === "PLStr") {
         const metrics = await contract.methods.getBasicMetrics().call();
-        const { contractTotalSupply, vPlsBalance } = Array.isArray(metrics)
-          ? { contractTotalSupply: metrics[0], vPlsBalance: metrics[1] }
+        const { contractTotalSupply, vPlsBalance, totalClaimablePLStr } = Array.isArray(metrics)
+          ? { contractTotalSupply: metrics[0], vPlsBalance: metrics[1], totalClaimablePLStr: metrics[5] }
           : metrics;
-        totalSupply = contractTotalSupply;
+        totalSupply = BigInt(contractTotalSupply) + BigInt(totalClaimablePLStr); // Include unclaimed PLStr
         backingTokenBalance = vPlsBalance;
       } else if (contractSymbol === "xBond") {
         try {
