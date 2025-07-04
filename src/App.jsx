@@ -4,7 +4,6 @@ import ContractInfo from "./components/ContractInfo";
 import UserInfo from "./components/UserInfo";
 import IssueShares from "./components/IssueShares";
 import RedeemShares from "./components/RedeemShares";
-import SwapBurn from "./components/SwapBurn";
 import ClaimPLSTR from "./components/ClaimPLSTR";
 import AdminPanel from "./components/AdminPanel";
 import WeightUpdate from "./components/WeightUpdate";
@@ -212,7 +211,7 @@ const App = () => {
               contractSymbol={contractSymbol}
               onTransactionSuccess={onTransactionSuccess}
             />
-            {contractSymbol === "PLSTR" ? (
+            {contractSymbol === "PLSTR" && (
               <>
                 <ClaimPLSTR
                   contract={contract}
@@ -229,27 +228,18 @@ const App = () => {
                   chainId={chainId}
                   onTransactionSuccess={onTransactionSuccess}
                 />
+                {isController && (
+                  <AdminPanel
+                    contract={contract}
+                    account={account}
+                    web3={web3}
+                    chainId={chainId}
+                    contractSymbol={contractSymbol}
+                    appIsController={isController}
+                    onTransactionSuccess={onTransactionSuccess}
+                  />
+                )}
               </>
-            ) : (
-              <SwapBurn
-                contract={contract}
-                account={account}
-                web3={web3}
-                chainId={chainId}
-                contractSymbol={contractSymbol}
-                onTransactionSuccess={onTransactionSuccess}
-              />
-            )}
-            {isController && (
-              <AdminPanel
-                contract={contract}
-                account={account}
-                web3={web3}
-                chainId={chainId}
-                contractSymbol={contractSymbol}
-                appIsController={isController}
-                onTransactionSuccess={onTransactionSuccess}
-              />
             )}
           </>
         )}
