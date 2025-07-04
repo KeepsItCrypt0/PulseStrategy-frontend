@@ -7,6 +7,7 @@ import RedeemShares from "./components/RedeemShares";
 import ClaimPLSTR from "./components/ClaimPLSTR";
 import AdminPanel from "./components/AdminPanel";
 import WeightUpdate from "./components/WeightUpdate";
+import FrontPage from "./components/FrontPage";
 import { getWeb3, getAccount, getContract, contractAddresses } from "./web3";
 import { PLSTR_ABI, xBond_ABI, iBond_ABI } from "./web3";
 import "./index.css";
@@ -23,6 +24,7 @@ const App = () => {
   const [isController, setIsController] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showFrontPage, setShowFrontPage] = useState(true);
 
   const contractABIs = {
     PLSTR: PLSTR_ABI,
@@ -105,7 +107,9 @@ const App = () => {
   };
 
   useEffect(() => {
-    initializeApp();
+    if (!showFrontPage) {
+      initializeApp();
+    }
 
     if (window.ethereum) {
       const handleChainChanged = () => {
@@ -126,7 +130,16 @@ const App = () => {
         window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
       };
     }
-  }, [contractSymbol]);
+  }, [contractSymbol, showFrontPage]);
+
+  // Handler to switch to main app
+  const handleEnterApp = () => {
+    setShowFrontPage(false);
+  };
+
+  if (showFrontPage) {
+    return <FrontPage onEnterApp={handleEnterApp} />;
+  }
 
   if (loading) {
     return (
@@ -139,7 +152,15 @@ const App = () => {
   return (
     <div className="min-h-screen gradient-bg flex flex-col items-center p-4">
       <header className="w-full max-w-4xl bg-white bg-opacity-90 shadow-lg rounded-lg p-6 mb-6 card">
-        <h1 className="text-3xl font-bold text-center text-purple-600">PulseStrategy</h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-center text-purple-600">PulseStrategy</h1>
+          <button
+            onClick={() => setShowFrontPage(true)}
+            className="text-purple-600 hover:underline"
+          >
+            Back to Home
+          </button>
+        </div>
         <p className="text-center text-gray-600 mt-2">
           {account
             ? `Interact with the ${contractSymbol} contract on PulseChain`
