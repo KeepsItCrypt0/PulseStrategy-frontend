@@ -59,7 +59,7 @@ const FrontPage = ({ onEnterApp }) => {
             </ul>
           </li>
           <li className="mb-2">
-            <strong>Reward Expiry:</strong>
+            <strong>Reward Expiration:</strong>
             <ul className="list-circle list-inside ml-4">
               <li>Unclaimed rewards expire after 90 days, resetting the reward pool.</li>
               <li>Expired rewards effectively burn PLSTR, increasing vPLS backing for claimed PLSTR.</li>
