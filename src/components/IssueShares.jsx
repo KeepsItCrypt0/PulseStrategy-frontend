@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { formatNumber } from "../utils/format";
-import { tokenAddresses, incABI, plsxABI } from "../web3";
+import { contractAddresses, tokenAddresses, plsxABI, incABI } from "../web3";
 
 const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTransactionSuccess }) => {
   const [amount, setAmount] = useState("");
@@ -23,8 +23,8 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
   const tokens = tokenConfig[contractSymbol] || [];
   const defaultToken = tokens[0]?.symbol || "";
 
-  if (!tokens.length) {
-    console.error("IssueShares: Invalid token config", { contractSymbol });
+  if (!tokens.length || contractSymbol === "PLStr") {
+    console.error("IssueShares: Invalid token config or PLStr not supported", { contractSymbol });
     return <div className="text-red-600 p-6">Error: Invalid contract configuration</div>;
   }
 
@@ -38,7 +38,6 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
     }
   };
 
-  // Convert amount to token's native units
   const toTokenUnits = (amount, decimals) => {
     try {
       if (!amount || Number(amount) <= 0) return "0";
@@ -49,17 +48,14 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
     }
   };
 
-  // Format input value with commas and preserve decimals
   const formatInputValue = (value) => {
     if (!value) return "";
     const [intPart, decPart] = value.replace(/,/g, "").split(".");
-    // Avoid formatting '0' as '0,', show empty string if cleared
     if (intPart === undefined || intPart === "") return decPart !== undefined ? `.${decPart}` : "";
     const formattedInt = new Intl.NumberFormat("en-US").format(Number(intPart));
     return decPart !== undefined ? `${formattedInt}.${decPart}` : (intPart ? formattedInt : "");
   };
 
-  // Handle input change to allow decimals and commas
   const handleAmountChange = (e) => {
     let rawValue = e.target.value.replace(/,/g, "");
     if (rawValue === "" || /^[0-9]*\.?[0-9]*$/.test(rawValue)) {
@@ -68,7 +64,6 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
     }
   };
 
-  // Fetch token balance
   const fetchTokenBalance = async () => {
     try {
       const token = tokens[0];
@@ -92,7 +87,7 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
 
   const handleIssueShares = async () => {
     if (!amount || Number(amount) <= 0 || Number(amount) > Number(tokenBalance)) {
-      setError(`Please Enter a valid amount within your ${defaultToken} balance`);
+      setError(`Please enter a valid amount within your ${defaultToken} balance`);
       return;
     }
     setLoading(true);
@@ -102,9 +97,9 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
       const tokenAmount = toTokenUnits(amount, token.decimals);
       if (tokenAmount === "0") throw new Error("Invalid token amount");
       const tokenContract = new web3.eth.Contract(token.abi, token.address);
-      const allowance = await tokenContract.methods.allowance(account, contract.options.address).call();
+      const allowance = await tokenContract.methods.allowance(account, contractAddresses[369][contractSymbol]).call();
       if (BigInt(allowance) < BigInt(tokenAmount)) {
-        await tokenContract.methods.approve(contract.options.address, tokenAmount).send({ from: account });
+        await tokenContract.methods.approve(contractAddresses[369][contractSymbol], tokenAmount).send({ from: account });
       }
       await contract.methods.issueShares(tokenAmount).send({ from: account });
       alert(`Successfully issued ${contractSymbol} shares with ${amount} ${token.symbol}!`);
