@@ -6,8 +6,8 @@ const ClaimPLStr = ({ contract, account, web3, chainId, contractSymbol, onTransa
   const [pendingPLStr, setPendingPLStr] = useState("0");
   const [xBondBalance, setXBondBalance] = useState("0");
   const [iBondBalance, setIBondBalance] = useState("0");
-  const [xBondPlsxLPBalance, setXBondPlsxLPBalance] = useState("0"); // Added
-  const [iBondIncLPBalance, setIBondIncLPBalance] = useState("0"); // Added
+  const [xBondPlsxLPBalance, setXBondPlsxLPBalance] = useState("0");
+  const [iBondIncLPBalance, setIBondIncLPBalance] = useState("0");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -132,10 +132,10 @@ const ClaimPLStr = ({ contract, account, web3, chainId, contractSymbol, onTransa
         iBond Balance: <span className="text-[#4B0082]">{formatNumber(iBondBalance)} iBond</span>
       </p>
       <p className="text-gray-500 mb-2">
-        xBond/PLSX LP Balance: <span className="text-[#4B0082]">{formatNumber(xBondPlsxLPBalance)} xBond/PLSX LP</span>
+        xBond/PLSX LP Balance: <span className="text-[#4B0082]">{formatNumber(xBondPlsxLPBalance)} PLP</span>
       </p>
       <p className="text-gray-500 mb-2">
-        iBond/INC LP Balance: <span className="text-[#4B0082]">{formatNumber(iBondIncLPBalance)} iBond/INC LP</span>
+        iBond/INC LP Balance: <span className="text-[#4B0082]">{formatNumber(iBondIncLPBalance)} PLP</span>
       </p>
       <button
         onClick={handleClaim}
