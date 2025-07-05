@@ -7,7 +7,6 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
   const [displayAmount, setDisplayAmount] = useState("");
   const [tokenBalance, setTokenBalance] = useState("0");
   const [loading, setLoading] = useState(false);
-  const [approvalLoading, setApprovalLoading] = useState(false);
   const [error, setError] = useState("");
 
   // Null checks for props
@@ -97,19 +96,12 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
       const token = tokens[0];
       const tokenAmount = toTokenUnits(amount, token.decimals);
       if (tokenAmount === "0") throw new Error("Invalid token amount");
-
       const tokenContract = new web3.eth.Contract(token.abi, token.address);
-
-      // Force approval every time
-      setApprovalLoading(true);
-      await tokenContract.methods
-        .approve(contractAddresses[369][contractSymbol], tokenAmount)
-        .send({ from: account });
-      setApprovalLoading(false);
-
-      // Proceed with issuing shares
+      const allowance = await tokenContract.methods.allowance(account, contractAddresses[369][contractSymbol]).call();
+      if (BigInt(allowance) < BigInt(tokenAmount)) {
+        await tokenContract.methods.approve(contractAddresses[369][contractSymbol], tokenAmount).send({ from: account });
+      }
       await contract.methods.issueShares(tokenAmount).send({ from: account });
-
       alert(`Successfully issued ${contractSymbol} shares with ${amount} ${token.symbol}!`);
       setAmount("");
       setDisplayAmount("");
@@ -122,7 +114,6 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
       console.error("Issue shares error:", err);
     } finally {
       setLoading(false);
-      setApprovalLoading(false);
     }
   };
 
@@ -152,7 +143,7 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
           onChange={handleAmountChange}
           placeholder={`Enter ${defaultToken} amount`}
           className="w-full p-2 border rounded-lg"
-          disabled={loading || approvalLoading}
+          disabled={loading}
         />
         <p className="text-gray-600 mt-2">
           Estimated {contractSymbol} (after 0.5% fee): <span className="text-[#4B0082]">{formatNumber(estimatedShares)}</span>
@@ -163,10 +154,10 @@ const IssueShares = ({ web3, contract, account, chainId, contractSymbol, onTrans
       </div>
       <button
         onClick={handleIssueShares}
-        disabled={loading || approvalLoading || !amount || Number(amount) <= 0}
+        disabled={loading || !amount || Number(amount) <= 0}
         className="btn-primary"
       >
-        {approvalLoading ? "Awaiting Approval..." : loading ? "Processing..." : "Issue"}
+        {loading ? "Processing..." : "Issue"}
       </button>
       {error && <p className="text-[#8B0000] mt-2">{error}</p>}
     </div>
