@@ -147,13 +147,6 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
           {contractSymbol !== "PLStr" && (
             <>
               <p className="text-gray-600">
-                {contractSymbol === "xBond" ? "PLSX" : "INC"} Balance:{" "}
-                <span className="text-[#4B0082]">
-                  {formatNumber(contractSymbol === "xBond" ? contractData.metrics.plsxBalance : contractData.metrics.incBalance)}{" "}
-                  {contractSymbol === "xBond" ? "PLSX" : "INC"}
-                </span>
-              </p>
-              <p className="text-gray-600">
                 Issuance Status:{" "}
                 <span className="text-[#4B0082]">
                   {contractData.issuanceStatus.isActive ? "Active" : "Ended"}
@@ -163,6 +156,13 @@ const ContractInfo = ({ contract, web3, chainId, contractSymbol }) => {
                 Supply Remaining:{" "}
                 <span className="text-[#4B0082]">
                   {formatNumber(contractData.issuanceStatus.supplyRemaining)} {contractSymbol}
+                </span>
+              </p>
+              <p className="text-gray-600">
+                {contractSymbol === "xBond" ? "PLSX" : "INC"} Balance:{" "}
+                <span className="text-[#4B0082]">
+                  {formatNumber(contractSymbol === "xBond" ? contractData.metrics.plsxBalance : contractData.metrics.incBalance)}{" "}
+                  {contractSymbol === "xBond" ? "PLSX" : "INC"}
                 </span>
               </p>
             </>
