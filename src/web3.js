@@ -5,7 +5,7 @@ export const contractAddresses = {
   369: {
     iBond: "0xb67073fe8f2a41807e038b1f91572bead3950c84",
     xBond: "0xe81ab1bfaa001eae4f226f8a8d3d607dc76d5b0a",
-    PLStr: "0x2106bc17094492ffa5032371BfA93b1206a5dd83",
+    PLStr: "0x045f61b8aee470b88aac3ac5b3e06372e1025216",
   },
 };
 
