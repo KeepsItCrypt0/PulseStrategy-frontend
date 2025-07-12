@@ -20,7 +20,7 @@ const FrontPage = ({ onEnterApp }) => {
           <li className="mb-2">
             <strong>Minting:</strong>
             <ul className="list-circle list-inside ml-4">
-              <li>Deposit PLSX/INC to mint xBond/iBond at a 1:1 ratio (minus 0.5% fee).</li>
+              <li>Deposit PLSX/INC to mint xBond/iBond (minus 0.5% fee).</li>
               <li>Issuance stops when max supply is reached: 3,690,000,000,000 xBOND or 3,690,000 iBOND.</li>
             </ul>
           </li>
